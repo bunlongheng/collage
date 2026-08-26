@@ -36,6 +36,33 @@ test("swiping across a photo changes its filter", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("tap selects a photo, tapping again deselects", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
+  const cell = page.getByRole("button", { name: "Photo slot 1, filled" });
+  await cell.click();
+  expect(await cell.evaluate((el) => getComputedStyle(el).boxShadow)).toContain("inset");
+  await cell.click();
+  expect(await cell.evaluate((el) => getComputedStyle(el).boxShadow)).toBe("none");
+});
+
+test("tapping two photos swaps them", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type=file]').setInputFiles([
+    "public/icon-512.png",
+    "public/apple-touch-icon.png",
+  ]);
+  const c0 = page.getByRole("button", { name: "Photo slot 1, filled" });
+  const c1 = page.getByRole("button", { name: "Photo slot 2, filled" });
+  const bg0 = await c0.evaluate((el) => (el as HTMLElement).style.backgroundImage);
+  const bg1 = await c1.evaluate((el) => (el as HTMLElement).style.backgroundImage);
+  expect(bg0).not.toBe(bg1);
+  await c0.click();
+  await c1.click();
+  expect(await c0.evaluate((el) => (el as HTMLElement).style.backgroundImage)).toBe(bg1);
+  expect(await c1.evaluate((el) => (el as HTMLElement).style.backgroundImage)).toBe(bg0);
+});
+
 test("Filter button changes the whole-collage filter", async ({ page }) => {
   await page.goto("/");
   await page.locator('input[type=file]').setInputFiles("public/icon-512.png");

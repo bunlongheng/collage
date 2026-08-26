@@ -14,6 +14,8 @@ type Props = {
   selectedTextId: string | null;
   selectedStickerId: string | null;
   onTapCell: (i: number) => void;
+  onHoldCell: (i: number) => void;
+  onDeselect: () => void;
   onCycleFilter: (dir: 1 | -1) => void;
   onSelectText: (id: string | null) => void;
   onMoveText: (id: string, xf: number, yf: number) => void;
@@ -59,10 +61,12 @@ function textStyle(t: TextItem, h: number): CSSProperties {
 }
 
 const STEP = 34; // px of horizontal swipe per filter change
+const HOLD_MS = 500; // press-and-hold to open the photo picker
+const MOVE_TOL = 12; // px before a press becomes a swipe
 
 export function Canvas({
   state, photos, selectedCell, selectedTextId, selectedStickerId,
-  onTapCell, onCycleFilter, onSelectText, onMoveText, onSelectSticker, onMoveSticker, stageRef,
+  onTapCell, onHoldCell, onDeselect, onCycleFilter, onSelectText, onMoveText, onSelectSticker, onMoveSticker, stageRef,
 }: Props) {
   const layout = getLayout(state.layoutId);
   const { wrapRef, size } = useFit(layout.aspect);
@@ -77,7 +81,16 @@ export function Canvas({
   const hasPhotos = Object.keys(state.filled).length > 0;
 
   const drag = useRef<{ kind: "text" | "sticker"; id: string } | null>(null);
-  const swipe = useRef<{ x0: number; y0: number; lastX: number; steps: number; cell: number | null } | null>(null);
+  const g = useRef<{ x0: number; y0: number; lastX: number; steps: number; cell: number | null; moved: boolean } | null>(null);
+  const holdTimer = useRef<number | undefined>(undefined);
+  const heldRef = useRef(false);
+  const [holding, setHolding] = useState<number | null>(null);
+
+  function clearHold() {
+    window.clearTimeout(holdTimer.current);
+    heldRef.current = false;
+    setHolding(null);
+  }
 
   function startDrag(e: React.PointerEvent, kind: "text" | "sticker", id: string) {
     e.stopPropagation();
@@ -87,14 +100,16 @@ export function Canvas({
     else onSelectSticker(id);
   }
 
-  // Whole-canvas gesture: horizontal swipe changes the collage filter; a plain
-  // tap on a photo swaps it.
   function onStageDown(e: React.PointerEvent) {
     e.stopPropagation();
     const el = (e.target as HTMLElement).closest("[data-cell]");
     const cell = el ? Number(el.getAttribute("data-cell")) : null;
-    swipe.current = { x0: e.clientX, y0: e.clientY, lastX: e.clientX, steps: 0, cell };
+    g.current = { x0: e.clientX, y0: e.clientY, lastX: e.clientX, steps: 0, cell, moved: false };
+    heldRef.current = false;
     stageRef.current?.setPointerCapture(e.pointerId);
+    if (cell != null && state.filled[cell]) {
+      holdTimer.current = window.setTimeout(() => { heldRef.current = true; setHolding(cell); }, HOLD_MS);
+    }
   }
   function onStageMove(e: React.PointerEvent) {
     if (drag.current && size.w) {
@@ -105,30 +120,41 @@ export function Canvas({
       else onMoveSticker(drag.current.id, xf, yf);
       return;
     }
-    const g = swipe.current;
-    if (!g || !hasPhotos) return;
-    let dx = e.clientX - g.lastX;
+    const s = g.current;
+    if (!s) return;
+    if (!s.moved && (Math.abs(e.clientX - s.x0) > MOVE_TOL || Math.abs(e.clientY - s.y0) > MOVE_TOL)) {
+      s.moved = true;
+      clearHold();
+    }
+    if (!hasPhotos) return;
+    let dx = e.clientX - s.lastX;
     while (Math.abs(dx) >= STEP) {
       onCycleFilter(dx > 0 ? 1 : -1);
-      g.lastX += (dx > 0 ? 1 : -1) * STEP;
-      g.steps += 1;
-      dx = e.clientX - g.lastX;
+      s.lastX += (dx > 0 ? 1 : -1) * STEP;
+      s.steps += 1;
+      dx = e.clientX - s.lastX;
     }
   }
-  function onStageUp(e: React.PointerEvent) {
+  function onStageUp() {
+    window.clearTimeout(holdTimer.current);
     drag.current = null;
-    const g = swipe.current;
-    swipe.current = null;
-    if (!g) return;
-    const moved = Math.abs(e.clientX - g.x0) > 10 || Math.abs(e.clientY - g.y0) > 10;
-    if (g.steps === 0 && !moved) {
-      if (g.cell != null) onTapCell(g.cell);
-      else { onSelectText(null); onSelectSticker(null); }
-    }
+    const s = g.current;
+    const held = heldRef.current;
+    g.current = null;
+    heldRef.current = false;
+    setHolding(null);
+    if (!s || s.steps > 0 || s.moved) return; // swipe / drag - not a tap
+    if (s.cell == null) onDeselect(); // tapped empty canvas -> clear selection
+    else if (held) onHoldCell(s.cell); // long press -> picker
+    else onTapCell(s.cell); // tap -> select / swap / add
   }
 
   return (
-    <div ref={wrapRef} className="relative grid min-h-0 flex-1 place-items-center overflow-hidden">
+    <div
+      ref={wrapRef}
+      className="relative grid min-h-0 flex-1 place-items-center overflow-hidden"
+      onPointerDown={() => onDeselect()}
+    >
       <div
         ref={stageRef}
         className="relative overflow-hidden rise"
@@ -168,6 +194,11 @@ export function Canvas({
                 <svg viewBox="0 0 24 24" className="size-7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden>
                   <path d="M12 5v14M5 12h14" />
                 </svg>
+              )}
+              {holding === i && (
+                <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/45 text-center text-xs font-medium text-white">
+                  Release to change
+                </div>
               )}
             </div>
           );

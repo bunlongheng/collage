@@ -105,11 +105,38 @@ export function Editor() {
     setSelectedCell(null);
   }
 
-  function onTapCell(i: number) {
-    setSelectedCell(i);
+  // Tap a filled photo to select it (blue ring); tap a second to swap the two,
+  // then the selection clears. Tap an empty slot to add a photo.
+  function tapCell(i: number) {
     setSelectedTextId(null);
     setSelectedStickerId(null);
+    if (!state.filled[i]) { openPicker(i); return; }
+    if (selectedCell == null) setSelectedCell(i);
+    else if (selectedCell === i) setSelectedCell(null);
+    else { swapCells(selectedCell, i); setSelectedCell(null); }
+  }
+
+  function swapCells(a: number, b: number) {
+    setState((s) => {
+      const filled = { ...s.filled };
+      const va = filled[a];
+      const vb = filled[b];
+      if (vb !== undefined) filled[a] = vb; else delete filled[a];
+      if (va !== undefined) filled[b] = va; else delete filled[b];
+      return { ...s, filled };
+    });
+  }
+
+  // Press-and-hold a photo to replace it from the camera roll.
+  function holdCell(i: number) {
+    setSelectedCell(null);
     openPicker(i);
+  }
+
+  function deselect() {
+    setSelectedCell(null);
+    setSelectedTextId(null);
+    setSelectedStickerId(null);
   }
 
   // One filter for the whole collage.
@@ -243,7 +270,9 @@ export function Editor() {
           selectedCell={selectedCell}
           selectedTextId={selectedTextId}
           selectedStickerId={selectedStickerId}
-          onTapCell={onTapCell}
+          onTapCell={tapCell}
+          onHoldCell={holdCell}
+          onDeselect={deselect}
           onCycleFilter={cycle}
           onSelectText={setSelectedTextId}
           onMoveText={moveText}
