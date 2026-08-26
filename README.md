@@ -56,25 +56,62 @@ scales to a CDN edge with zero infrastructure.
 | --- | --- | --- |
 | <img src="docs/hero-light.png" width="260" /> | <img src="docs/mobile-dark.png" width="150" /> | <img src="docs/signin.png" width="260" /> |
 
-## How it works
+## Architecture
+
+The whole editor is fractional: every cell and every text overlay is a `{x, y, w, h}`
+in the unit square, so the on-screen preview and the exported PNG are computed from
+identical numbers. The shared math lives in one pure, tested module used by both the
+DOM renderer and the canvas exporter, so the preview can never drift from the file.
+
+```mermaid
+flowchart LR
+    U["iPhone / Browser"] --> E["Editor (state)"]
+    E --> C["Canvas preview (DOM)"]
+    E -. downloadCollage .-> X["Canvas 2D to PNG"]
+    G["SVG gallery (data URIs)"] --> C
+    C --> GEO["geometry.ts (pure)"]
+    X --> GEO
+    V["Vercel CDN (static)"] -. serves .-> U
+```
+
+| Module | Role |
+| --- | --- |
+| `src/lib/geometry.ts` | Pure fit / cover math (unit-tested) |
+| `src/lib/layouts.ts` | Layout templates, backgrounds, text presets |
+| `src/lib/gallery.ts` | Self-contained SVG data-URI starter art |
+| `src/lib/export.ts` | Canvas 2D to PNG renderer (WYSIWYG) |
+| `src/components/Editor.tsx` | State owner + orchestration |
+| `src/components/Canvas.tsx` | Fractional preview stage |
+| `src/components/Tray.tsx` | Photos / Layout / Text / Style tools |
+
+The gallery art is generated as SVG data URIs, which keeps the bundle tiny, needs no
+image licensing, and never taints the export canvas.
+
+## Design decisions
+
+| Decision | Chosen | Alternative | Why |
+| --- | --- | --- | --- |
+| Storage | Fully client-side | Accounts + DB | Private, free to host, infinitely scalable |
+| Export | Hand-rolled canvas 2D | `html-to-image` dep | One less dependency, exact geometry control |
+| Gallery | Inline SVG data URIs | Bundled bitmaps | No licensing, no requests, no canvas taint |
+| Geometry | One fractional model | Separate preview/export math | Preview and PNG can never disagree |
+
+## Project layout
 
 ```
-Photos (SVG gallery + FileReader uploads, all data: URIs)
-        │
-        ▼
-CollageState ── layout · filled cells · text overlays · style
-        │                         │
-        ▼                         ▼
-   DOM canvas               canvas 2D render
- (WYSIWYG preview)     (2160px PNG, same geometry)
-        │                         │
-        └──────────► one fractional cell model ◄──────┘
+src/
+  app/            # routes: editor (/), sign-in (/signin), manifest, layout
+  components/     # Editor, Canvas, Tray, ThemeToggle, Mark
+  lib/            # geometry, layouts, gallery, export, types (+ *.test.ts)
+e2e/              # Playwright specs (desktop + iPhone)
+scripts/          # asset + screenshot generation
+public/           # icons, OG image, favicon
+docs/             # README screenshots
 ```
 
-The whole editor is fractional: every cell is a `{x, y, w, h}` in the unit square,
-so the on-screen preview and the exported PNG are computed from identical numbers.
-The gallery art is generated as self-contained SVG data URIs, which keeps the
-bundle tiny, needs no image licensing, and never taints the export canvas.
+## Configuration
+
+No environment variables required. Clone, install, run.
 
 ## Run locally
 
