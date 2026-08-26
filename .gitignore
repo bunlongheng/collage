@@ -13,3 +13,8 @@ out
 /coverage
 *.tsbuildinfo
 next-env.d.ts
+.env*
+
+# scaffold agent-rule files (not part of the app)
+AGENTS.md
+CLAUDE.md

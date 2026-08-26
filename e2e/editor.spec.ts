@@ -37,6 +37,15 @@ test("places a gallery photo into an empty cell", async ({ page }) => {
   await expect(page.getByRole("button", { name: /Cell 4, filled/ })).toBeVisible();
 });
 
+test("removes the selected text with the keyboard", async ({ page }) => {
+  await page.goto("/");
+  const caption = page.getByText("Golden hour");
+  await expect(caption).toBeVisible();
+  await caption.click();
+  await page.keyboard.press("Backspace");
+  await expect(page.getByText("Golden hour")).toHaveCount(0);
+});
+
 test("exports a PNG download", async ({ page }) => {
   await page.goto("/");
   const downloadPromise = page.waitForEvent("download");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas } from "./Canvas";
 import { Mark } from "./Mark";
 import { ThemeToggle } from "./ThemeToggle";
@@ -8,6 +8,7 @@ import { Tray } from "./Tray";
 import { GALLERY } from "@/lib/gallery";
 import { TEXT_PRESETS } from "@/lib/layouts";
 import { downloadCollage } from "@/lib/export";
+import { clamp01 } from "@/lib/geometry";
 import type { CollageState, Photo, TextItem, TextPreset } from "@/lib/types";
 
 const INITIAL: CollageState = {
@@ -43,6 +44,39 @@ export function Editor() {
   const photos = useMemo(() => [...uploads, ...GALLERY], [uploads]);
   const selectedText =
     state.texts.find((t) => t.id === selectedTextId) ?? null;
+
+  // Keyboard control for the selected text: nudge with arrows, remove with
+  // Backspace/Delete. Ignored while typing in a field.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!selectedTextId) return;
+      const el = e.target as HTMLElement;
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") return;
+      const step = e.shiftKey ? 0.05 : 0.01;
+      const t = state.texts.find((x) => x.id === selectedTextId);
+      if (!t) return;
+      if (e.key === "Backspace" || e.key === "Delete") {
+        e.preventDefault();
+        deleteText();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        moveText(t.id, clamp01(t.xf - step), t.yf);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        moveText(t.id, clamp01(t.xf + step), t.yf);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        moveText(t.id, t.xf, clamp01(t.yf - step));
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        moveText(t.id, t.xf, clamp01(t.yf + step));
+      } else if (e.key === "Escape") {
+        setSelectedTextId(null);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedTextId, state.texts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function flash(msg: string) {
     setToast(msg);
