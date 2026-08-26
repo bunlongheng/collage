@@ -6,10 +6,11 @@ import { LayoutGlyph } from "./LayoutGlyph";
 import { ThemeToggle } from "./ThemeToggle";
 import type { CollageState } from "@/lib/types";
 
-/** Floating panel shell - only rendered when its tool is active. */
+/** Floating panel shell - drops down from just under the header (near the tool
+ * icons that opened it), only rendered when its tool is active. */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="safe-b pointer-events-auto absolute inset-x-0 bottom-0 z-20 border-t hair bg-surface/95 p-3 backdrop-blur rise md:mx-auto md:max-w-3xl">
+    <div className="pointer-events-auto absolute inset-x-2 top-2 z-20 rounded-2xl border hair bg-surface/95 p-3 shadow-[var(--shadow)] backdrop-blur rise md:mx-auto md:max-w-3xl">
       {children}
     </div>
   );

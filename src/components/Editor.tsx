@@ -199,13 +199,17 @@ export function Editor() {
           <IconButton label="Layouts" active={tool === "layouts"} onClick={() => toggleTool("layouts")}>
             <LayoutGlyph layout={getLayout(state.layoutId)} px={18} />
           </IconButton>
-          <IconButton label="Filter" active={filterMode} onClick={() => { setFilterMode((v) => !v); setTool(null); setSelectedTextId(null); setSelectedStickerId(null); }}>
-            <FilterIcon />
-          </IconButton>
-          <IconButton label="Add text" onClick={addText}><TextIcon /></IconButton>
-          <IconButton label="Stickers" active={tool === "stickers"} onClick={() => toggleTool("stickers")}><SmileIcon /></IconButton>
-          <IconButton label="Adjust" active={tool === "adjust"} onClick={() => toggleTool("adjust")}><SlidersIcon /></IconButton>
           {hasPhotos && (
+            <>
+              <IconButton label="Filter" active={filterMode} onClick={() => { setFilterMode((v) => !v); setTool(null); setSelectedTextId(null); setSelectedStickerId(null); }}>
+                <FilterIcon />
+              </IconButton>
+              <IconButton label="Add text" onClick={addText}><TextIcon /></IconButton>
+              <IconButton label="Stickers" active={tool === "stickers"} onClick={() => toggleTool("stickers")}><SmileIcon /></IconButton>
+              <IconButton label="Adjust" active={tool === "adjust"} onClick={() => toggleTool("adjust")}><SlidersIcon /></IconButton>
+            </>
+          )}
+          {hasPhotos ? (
             <button
               type="button"
               onClick={onSave}
@@ -214,6 +218,15 @@ export function Editor() {
             >
               <SaveIcon />
               {exporting ? "Saving…" : "Save"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => openPicker(0)}
+              className="ml-1 flex items-center gap-2 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink transition-opacity hover:opacity-90"
+            >
+              <PhotosIcon />
+              Select {cellCount} photo{cellCount > 1 ? "s" : ""}
             </button>
           )}
         </div>
@@ -235,19 +248,6 @@ export function Editor() {
           onMoveSticker={moveSticker}
           stageRef={stageRef}
         />
-
-        {!hasPhotos && (
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => openPicker(0)}
-              className="pointer-events-auto flex items-center gap-2.5 rounded-full bg-accent px-6 py-3.5 text-base font-semibold text-accent-ink shadow-[var(--shadow)] transition-opacity hover:opacity-90"
-            >
-              <PhotosIcon />
-              Select photos
-            </button>
-          </div>
-        )}
 
         {selectedText && <TextToolbar text={selectedText} onUpdate={updateText} onDelete={deleteText} />}
         {selectedSticker && <StickerToolbar sticker={selectedSticker} onUpdate={updateSticker} onDelete={deleteSticker} />}

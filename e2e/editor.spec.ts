@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("loads clean: empty slots and a Select photos prompt", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle(/Collage/);
-  await expect(page.getByRole("button", { name: "Select photos" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Select 4 photos" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Photo slot 1, empty" })).toBeVisible();
   // No always-on menu: Save only appears once there are photos.
   await expect(page.getByRole("button", { name: "Save" })).toHaveCount(0);
@@ -48,6 +48,7 @@ test("filter mode: tapping a photo flicks to the next filter", async ({ page }) 
 
 test("adds an emoji sticker", async ({ page }) => {
   await page.goto("/");
+  await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
   await page.getByRole("button", { name: "Stickers" }).click();
   await page.getByRole("button", { name: "Add 🔥" }).click();
   await expect(page.getByRole("button", { name: "Sticker 🔥" })).toBeVisible();
@@ -62,6 +63,7 @@ test("layouts panel only shows when the tool is tapped", async ({ page }) => {
 
 test("adjust panel exposes safe area and curve", async ({ page }) => {
   await page.goto("/");
+  await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
   await expect(page.getByText("Safe area")).toHaveCount(0);
   await page.getByRole("button", { name: "Adjust" }).click();
   await expect(page.getByText("Safe area")).toBeVisible();
@@ -70,6 +72,7 @@ test("adjust panel exposes safe area and curve", async ({ page }) => {
 
 test("toggles light and dark mode from Adjust", async ({ page }) => {
   await page.goto("/");
+  await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
   await page.getByRole("button", { name: "Adjust" }).click();
   const html = page.locator("html");
   const before = await html.evaluate((el) => el.classList.contains("dark"));
@@ -80,6 +83,7 @@ test("toggles light and dark mode from Adjust", async ({ page }) => {
 
 test("adds and removes a caption", async ({ page }) => {
   await page.goto("/");
+  await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
   await page.getByRole("button", { name: "Add text" }).click();
   await expect(page.getByLabel("Caption text")).toHaveValue("Your caption");
   await page.getByRole("button", { name: "Delete caption" }).click();
