@@ -10,12 +10,12 @@ export const metadata: Metadata = {
 
 export default function SignIn() {
   return (
-    <main className="grid min-h-[100dvh] place-items-center bg-paper px-6">
+    <main className="grid min-h-[100dvh] place-items-center bg-bg px-6">
       <div className="w-full max-w-sm rounded-3xl border hair bg-surface p-8 text-center shadow-[var(--shadow)] rise">
         <div className="mx-auto mb-5 grid size-16 place-items-center rounded-2xl bg-surface-2">
           <Mark className="size-9 text-ink" />
         </div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
           Nothing to sign into
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-muted">

@@ -130,7 +130,7 @@ export async function renderCollage(
       const pw = m.width + padX * 2;
       const phh = fontPx + padY * 2;
       roundRectPath(ctx, -pw / 2, -phh / 2, pw, phh, phh / 2);
-      ctx.fillStyle = "#dd3f22";
+      ctx.fillStyle = "#007aff";
       ctx.fill();
       ctx.fillStyle = t.color;
       ctx.fillText(label, 0, fontPx * 0.04);

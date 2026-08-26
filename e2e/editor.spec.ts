@@ -1,10 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-test("loads the editor with the default collage", async ({ page }) => {
+test("loads the editor with an auto-filled collage", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("banner").getByText("Collage")).toBeVisible();
-  await expect(page.getByText("Golden hour")).toBeVisible();
+  await expect(page.getByText("Summer 2026")).toBeVisible();
   await expect(page.getByRole("button", { name: "Export" })).toBeVisible();
+  // Quad layout is pre-filled - slot 1 is filled on load, no clicks needed.
+  await expect(page.getByRole("button", { name: "Photo slot 1, filled" })).toBeVisible();
 });
 
 test("toggles light and dark mode", async ({ page }) => {
@@ -16,34 +18,28 @@ test("toggles light and dark mode", async ({ page }) => {
   expect(after).toBe(!before);
 });
 
-test("adds a text overlay from a preset", async ({ page }) => {
+test("tapping a photo fills the selected slot and advances", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("tab", { name: "Text" }).click();
-  await page.getByRole("button", { name: "Headline", exact: false }).first().click();
-  // The editable input for the new selection shows its default label.
-  await expect(page.getByLabel("Text content")).toHaveValue("Headline");
+  await expect(page.getByText("Photos -> slot 1")).toBeVisible();
+  await page.getByRole("button", { name: "Indigo" }).click();
+  // Selection advances so the next tap fills the next slot - fewer clicks.
+  await expect(page.getByText("Photos -> slot 2")).toBeVisible();
 });
 
-test("places a gallery photo into an empty cell", async ({ page }) => {
+test("switches layout and keeps it filled", async ({ page }) => {
   await page.goto("/");
-  // Quad layout leaves the 4th cell empty on first load.
-  await page.getByRole("tab", { name: "Layout" }).click();
-  await page.getByRole("button", { name: "Quad" }).click();
-  await page.getByRole("tab", { name: "Photos" }).click();
-  await page.getByRole("button", { name: "Ember" }).click();
-  const emptyCell = page.getByRole("button", { name: /Cell 4, empty/ });
-  await expect(emptyCell).toBeVisible();
-  await emptyCell.click();
-  await expect(page.getByRole("button", { name: /Cell 4, filled/ })).toBeVisible();
+  const story = page.getByRole("button", { name: "Layout Story split" });
+  await story.click();
+  await expect(story).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Photo slot 1, filled" })).toBeVisible();
 });
 
-test("removes the selected text with the keyboard", async ({ page }) => {
+test("adds and removes a caption without leaving the screen", async ({ page }) => {
   await page.goto("/");
-  const caption = page.getByText("Golden hour");
-  await expect(caption).toBeVisible();
-  await caption.click();
-  await page.keyboard.press("Backspace");
-  await expect(page.getByText("Golden hour")).toHaveCount(0);
+  await page.getByRole("button", { name: "Text", exact: true }).click();
+  await expect(page.getByLabel("Caption text")).toHaveValue("Your caption");
+  await page.getByRole("button", { name: "Delete caption" }).click();
+  await expect(page.getByText("Your caption")).toHaveCount(0);
 });
 
 test("exports a PNG download", async ({ page }) => {

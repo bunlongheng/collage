@@ -83,11 +83,11 @@ export function getLayout(id: string): Layout {
 }
 
 export const BACKGROUNDS: Background[] = [
-  { id: "paper", name: "Paper", color: "#f6f2ea" },
-  { id: "ink", name: "Ink", color: "#17140f" },
-  { id: "snow", name: "Snow", color: "#ffffff" },
-  { id: "accent", name: "Ember", color: "#dd3f22" },
-  { id: "sage", name: "Sage", color: "#c7d0bd" },
+  { id: "snow", name: "White", color: "#ffffff" },
+  { id: "ink", name: "Black", color: "#000000" },
+  { id: "grey", name: "Grey", color: "#f2f2f7" },
+  { id: "accent", name: "Blue", color: "#007aff" },
+  { id: "sand", name: "Sand", color: "#efe7db" },
 ];
 
 export function getBackground(id: string): Background {
@@ -112,52 +112,52 @@ export type PresetStyle = {
   pill?: boolean;
 };
 
+// System font stacks only - nothing to download, so text renders instantly and
+// the export canvas has the exact fonts available with no web-font wait.
+const SANS =
+  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+const SERIF = 'Georgia, "Times New Roman", serif';
+
 export const TEXT_PRESETS: Record<TextPreset, PresetStyle> = {
   headline: {
     label: "Headline",
-    fontFamily: "var(--font-fraunces), Georgia, serif",
-    weight: 600,
+    fontFamily: SANS,
+    weight: 700,
     italic: false,
-    tracking: -0.01,
+    tracking: -0.02,
     uppercase: false,
-    size: 0.11,
-    color: "#fffaf5",
+    size: 0.1,
+    color: "#ffffff",
   },
   caption: {
     label: "Caption",
-    fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+    fontFamily: SANS,
     weight: 600,
     italic: false,
     tracking: 0.22,
     uppercase: true,
     size: 0.035,
-    color: "#fffaf5",
+    color: "#ffffff",
   },
   sticker: {
     label: "Sticker",
-    fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+    fontFamily: SANS,
     weight: 700,
     italic: false,
     tracking: 0.01,
     uppercase: false,
     size: 0.05,
-    color: "#150b07",
+    color: "#ffffff",
     pill: true,
   },
   signature: {
     label: "Signature",
-    fontFamily: "var(--font-fraunces), Georgia, serif",
+    fontFamily: SERIF,
     weight: 500,
     italic: true,
     tracking: 0,
     uppercase: false,
     size: 0.06,
-    color: "#fffaf5",
+    color: "#ffffff",
   },
 };
-
-/** The font family strings used above, for canvas export font readiness. */
-export const EXPORT_FONT_FAMILIES = [
-  "var(--font-fraunces)",
-  "var(--font-geist-sans)",
-];

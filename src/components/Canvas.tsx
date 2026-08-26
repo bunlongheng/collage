@@ -8,15 +8,14 @@ import type { CollageState, Photo, TextItem } from "@/lib/types";
 type Props = {
   state: CollageState;
   photos: Photo[];
-  activePhotoId: string | null;
+  selectedCell: number | null;
   selectedTextId: string | null;
-  onPlace: (cellIndex: number) => void;
+  onSelectCell: (i: number) => void;
   onSelectText: (id: string | null) => void;
   onMoveText: (id: string, xf: number, yf: number) => void;
   stageRef: React.RefObject<HTMLDivElement | null>;
 };
 
-/** Best-fit pixel size for the stage inside its parent, preserving aspect. */
 function useFit(aspect: [number, number]) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -25,7 +24,7 @@ function useFit(aspect: [number, number]) {
     if (!el) return;
     const [aw, ah] = aspect;
     const ro = new ResizeObserver(() => {
-      const pad = 24;
+      const pad = 16;
       setSize(fitSize(aw, ah, el.clientWidth - pad * 2, el.clientHeight - pad * 2));
     });
     ro.observe(el);
@@ -64,9 +63,9 @@ function presetStyle(t: TextItem, h: number): CSSProperties {
 export function Canvas({
   state,
   photos,
-  activePhotoId,
+  selectedCell,
   selectedTextId,
-  onPlace,
+  onSelectCell,
   onSelectText,
   onMoveText,
   stageRef,
@@ -87,12 +86,11 @@ export function Canvas({
   function onPointerMove(e: React.PointerEvent) {
     if (!drag.current || size.w === 0) return;
     const rect = stageRef.current!.getBoundingClientRect();
-    const xf = clamp01((e.clientX - rect.left) / rect.width);
-    const yf = clamp01((e.clientY - rect.top) / rect.height);
-    onMoveText(drag.current.id, xf, yf);
-  }
-  function endDrag() {
-    drag.current = null;
+    onMoveText(
+      drag.current.id,
+      clamp01((e.clientX - rect.left) / rect.width),
+      clamp01((e.clientY - rect.top) / rect.height)
+    );
   }
 
   return (
@@ -108,50 +106,46 @@ export function Canvas({
           width: size.w || 1,
           height: size.h || 1,
           background: getBackground(state.bgId).color,
-          borderRadius: Math.max(6, radiusPx * 0.5),
+          borderRadius: Math.max(10, radiusPx * 0.6),
           boxShadow: "var(--shadow)",
           touchAction: "none",
         }}
         onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
+        onPointerUp={() => (drag.current = null)}
+        onPointerCancel={() => (drag.current = null)}
         onPointerDown={(e) => e.stopPropagation()}
       >
         {layout.cells.map((cell, i) => {
           const photo = state.filled[i] ? byId.get(state.filled[i]) : undefined;
-          const style: CSSProperties = {
-            left: cell.x * size.w + gapPx / 2,
-            top: cell.y * size.h + gapPx / 2,
-            width: cell.w * size.w - gapPx,
-            height: cell.h * size.h - gapPx,
-            borderRadius: radiusPx,
-          };
+          const active = selectedCell === i;
           return (
             <button
               key={i}
               type="button"
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => onPlace(i)}
-              className={`absolute overflow-hidden transition-shadow ${
-                photo
-                  ? ""
-                  : "grid place-items-center border border-dashed hair text-muted"
-              } ${activePhotoId ? "ring-2 ring-accent/50" : ""}`}
+              onClick={() => onSelectCell(i)}
+              className={`absolute overflow-hidden ${
+                photo ? "" : "grid place-items-center text-white/70"
+              }`}
               style={{
-                ...style,
-                backgroundColor: photo ? undefined : "var(--color-surface-2)",
+                left: cell.x * size.w + gapPx / 2,
+                top: cell.y * size.h + gapPx / 2,
+                width: cell.w * size.w - gapPx,
+                height: cell.h * size.h - gapPx,
+                borderRadius: radiusPx,
+                backgroundColor: photo ? undefined : "rgba(120,120,128,0.16)",
                 backgroundImage: photo ? `url("${photo.src}")` : undefined,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
+                boxShadow: active ? "inset 0 0 0 3px var(--color-accent)" : undefined,
               }}
-              aria-label={
-                photo ? `Cell ${i + 1}, filled` : `Cell ${i + 1}, empty - tap to place photo`
-              }
+              aria-label={photo ? `Photo slot ${i + 1}, filled` : `Photo slot ${i + 1}, empty`}
+              aria-pressed={active}
             >
               {!photo && (
-                <span className="text-2xl font-light" aria-hidden>
-                  +
-                </span>
+                <svg viewBox="0 0 24 24" className="size-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
               )}
             </button>
           );

@@ -3,7 +3,9 @@ export function Mark({ className = "" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 32 32"
-      className={className}
+      width="32"
+      height="32"
+      className={`shrink-0 ${className}`}
       fill="none"
       aria-hidden="true"
     >

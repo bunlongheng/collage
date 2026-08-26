@@ -16,7 +16,9 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  "upgrade-insecure-requests",
+  // Note: no 'upgrade-insecure-requests' - HSTS preload already forces HTTPS
+  // for the domain and every subresource is same-origin HTTPS, so it adds no
+  // real protection while breaking http://localhost loads in WebKit.
 ].join("; ");
 
 const securityHeaders = [

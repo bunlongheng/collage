@@ -36,6 +36,11 @@ scales to a CDN edge with zero infrastructure.
 
 ## Features
 
+- **Fewest clicks** - every layout auto-fills instantly, uploaded photos drop
+  straight into the slots in order, and tapping a photo fills the selected slot
+  then advances. A real user does: tap `+`, pick photos, Export.
+- **Instant** - system fonts (SF on iPhone), no web-font downloads, static SSG -
+  it paints immediately.
 - **Photos in, PNG out** - pick from the built-in gallery or upload your own from
   your camera roll. Everything is processed on-device.
 - **8 layouts** - single, side-by-side, stacked, feature, quad, thirds, story and

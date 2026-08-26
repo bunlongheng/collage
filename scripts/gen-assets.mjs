@@ -8,8 +8,8 @@ import pngToIco from "png-to-ico";
 
 const PUB = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
 
-const INK = "#f3ede1";
-const ACCENT = "#dd3f22";
+const INK = "#f5f5f7";
+const ACCENT = "#0a84ff";
 
 /** The two-frames-plus-chip mark, drawn in a 512 box, scaled about centre. */
 function mark(scale = 1) {
@@ -26,8 +26,8 @@ function iconSvg({ scale = 1, radius = 0 } = {}) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
     <defs>
       <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#2a251c"/>
-        <stop offset="1" stop-color="#0c0b09"/>
+        <stop offset="0" stop-color="#2c2c2e"/>
+        <stop offset="1" stop-color="#000000"/>
       </linearGradient>
     </defs>
     <rect width="512" height="512" rx="${radius}" fill="url(#bg)"/>
@@ -39,8 +39,8 @@ function ogSvg() {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
     <defs>
       <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#17140f"/>
-        <stop offset="1" stop-color="#0c0b09"/>
+        <stop offset="0" stop-color="#1c1c1e"/>
+        <stop offset="1" stop-color="#000000"/>
       </linearGradient>
     </defs>
     <rect width="1200" height="630" fill="url(#bg)"/>
@@ -49,7 +49,7 @@ function ogSvg() {
       <rect x="185" y="165" width="210" height="210" rx="42" transform="rotate(9 290 270)" fill="${INK}"/>
       <circle cx="300" cy="300" r="40" fill="${ACCENT}"/>
     </g>
-    <text x="470" y="300" font-family="Georgia, 'Times New Roman', serif" font-size="128" font-weight="600" fill="${INK}">Collage</text>
+    <text x="470" y="300" font-family="Helvetica, Arial, sans-serif" font-size="124" font-weight="700" fill="${INK}">Collage</text>
     <text x="474" y="372" font-family="Helvetica, Arial, sans-serif" font-size="34" letter-spacing="1" fill="#9d9484">Make it. Caption it. Ship it.</text>
     <rect x="474" y="410" width="120" height="8" rx="4" fill="${ACCENT}"/>
   </svg>`;
