@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { FONTS, getBackground, getLayout, TEXT_PRESETS } from "@/lib/layouts";
 import { filterCss } from "@/lib/filters";
 import { emojiSrc } from "@/lib/emoji";
+import { stickerFilter } from "@/lib/sticker";
 import { clamp01, fitSize } from "@/lib/geometry";
 import type { CollageState, Photo, TextItem } from "@/lib/types";
 
@@ -219,7 +220,6 @@ export function Canvas({
 
         {state.stickers.map((s) => {
           const px = s.size * size.h;
-          const pad = px * 0.24;
           return (
             <div
               key={s.id}
@@ -232,13 +232,14 @@ export function Canvas({
                 left: `${s.xf * 100}%`,
                 top: `${s.yf * 100}%`,
                 transform: `translate(-50%, -50%) rotate(${s.rotation}deg)`,
-                background: "#fff",
-                padding: pad,
-                borderRadius: (px + pad * 2) * 0.3,
-                boxShadow: `0 ${px * 0.07}px ${px * 0.16}px rgba(0,0,0,0.3)`,
               }}
             >
-              <img src={emojiSrc(s.code)} alt="" draggable={false} style={{ width: px, height: px, display: "block", pointerEvents: "none" }} />
+              <img
+                src={emojiSrc(s.code)}
+                alt=""
+                draggable={false}
+                style={{ width: px, height: px, display: "block", pointerEvents: "none", filter: stickerFilter(px) }}
+              />
             </div>
           );
         })}

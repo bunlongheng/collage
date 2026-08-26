@@ -1,5 +1,6 @@
 import { FONTS, getBackground, getLayout, TEXT_PRESETS } from "./layouts";
 import { filterCss } from "./filters";
+import { stickerFilter } from "./sticker";
 import { coverCrop } from "./geometry";
 import type { CollageState, Photo, Rect } from "./types";
 
@@ -154,27 +155,19 @@ export async function renderCollage(
     ctx.restore();
   }
 
-  // Emoji stickers - die-cut look: HD vector emoji on a white rounded pad + shadow.
+  // Emoji stickers - die-cut look: a white outline hugging the emoji shape.
   const stickerImgs = await Promise.all(
     state.stickers.map((s) => loadImage(`/emoji/${s.code}.svg`).catch(() => null))
   );
   state.stickers.forEach((s, k) => {
     const img = stickerImgs[k];
+    if (!img) return;
     const px = s.size * ch;
-    const pad = px * 0.24;
-    const box = px + pad * 2;
     ctx.save();
     ctx.translate(s.xf * cw, s.yf * ch);
     ctx.rotate((s.rotation * Math.PI) / 180);
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.3)";
-    ctx.shadowBlur = px * 0.16;
-    ctx.shadowOffsetY = px * 0.07;
-    ctx.fillStyle = "#ffffff";
-    roundRectPath(ctx, -box / 2, -box / 2, box, box, box * 0.3);
-    ctx.fill();
-    ctx.restore();
-    if (img) ctx.drawImage(img, -px / 2, -px / 2, px, px);
+    ctx.filter = stickerFilter(px);
+    ctx.drawImage(img, -px / 2, -px / 2, px, px);
     ctx.restore();
   });
 
