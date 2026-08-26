@@ -5,11 +5,11 @@ test("loads clean: empty slots and a Select photos prompt", async ({ page }) => 
   await expect(page).toHaveTitle(/Collage/);
   await expect(page.getByRole("button", { name: "Select photos" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Photo slot 1, empty" })).toBeVisible();
-  // No always-on menu: Export only appears once there are photos.
-  await expect(page.getByRole("button", { name: "Export" })).toHaveCount(0);
+  // No always-on menu: Save only appears once there are photos.
+  await expect(page.getByRole("button", { name: "Save" })).toHaveCount(0);
 });
 
-test("selecting photos fills slots and reveals Export", async ({ page }) => {
+test("selecting photos fills slots and reveals Save", async ({ page }) => {
   await page.goto("/");
   await page.locator('input[type=file]').setInputFiles([
     "public/icon-512.png",
@@ -17,7 +17,14 @@ test("selecting photos fills slots and reveals Export", async ({ page }) => {
   ]);
   await expect(page.getByRole("button", { name: "Photo slot 1, filled" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Photo slot 2, filled" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Export" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
+});
+
+test("adds an emoji sticker", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Stickers" }).click();
+  await page.getByRole("button", { name: "Add 🔥" }).click();
+  await expect(page.getByRole("button", { name: "Sticker 🔥" })).toBeVisible();
 });
 
 test("layouts panel only shows when the tool is tapped", async ({ page }) => {
@@ -53,11 +60,15 @@ test("adds and removes a caption", async ({ page }) => {
   await expect(page.getByText("Your caption")).toHaveCount(0);
 });
 
-test("exports a PNG after adding a photo", async ({ page }) => {
+test("saves a PNG after adding a photo", async ({ page }) => {
+  // Force the download fallback (headless has no real share sheet).
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "canShare", { value: () => false, configurable: true });
+  });
   await page.goto("/");
   await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export" }).click();
+  await page.getByRole("button", { name: "Save" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/^collage-\d+\.png$/);
 });

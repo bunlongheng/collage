@@ -39,8 +39,15 @@ scales to a CDN edge with zero infrastructure.
 - **Fewest clicks** - tap **Select photos**, pick 4 for a 4-up (they fill the
   slots in order), tap **Export**. Tap any tile to swap that photo straight from
   your camera roll.
-- **Clean, phone-first** - nothing on screen but your collage; tools (layouts,
-  text, adjust) reveal their controls only when tapped. No always-on menus.
+- **Clean, phone-first** - nothing on screen but your collage; tools reveal their
+  controls only when tapped. No always-on menus.
+- **Filters** - swipe across any photo to flick through Warm, Cold, Dream, Dark,
+  B&W, Noir, Sepia, HDR and Fade. Applied identically in the preview and export.
+- **Stickers** - tap in emoji stickers, then drag, resize and spin them.
+- **Text** - captions with font (sans/serif/mono/round), color, and top/middle/
+  bottom placement.
+- **Saves to Photos** - on a phone, Save opens the share sheet so "Save Image"
+  drops it straight into your camera roll (desktop downloads a PNG).
 - **Instant** - system fonts (SF on iPhone), no web-font downloads, static SSG -
   it paints immediately.
 - **Photos in, PNG out** - pick from the built-in gallery or upload your own from

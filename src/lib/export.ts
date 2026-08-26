@@ -1,4 +1,5 @@
 import { FONTS, getBackground, getLayout, TEXT_PRESETS } from "./layouts";
+import { filterCss } from "./filters";
 import { coverCrop } from "./geometry";
 import type { CollageState, Photo, Rect } from "./types";
 
@@ -88,25 +89,30 @@ export async function renderCollage(
   const iw = cw - inset * 2;
   const ih = ch - inset * 2;
 
-  // Cells
-  for (let i = 0; i < layout.cells.length; i++) {
-    const photoId = state.filled[i];
-    if (!photoId) continue;
-    const photo = byId.get(photoId);
-    if (!photo) continue;
-    const cell = layout.cells[i];
-    const x = inset + cell.x * iw + gapPx / 2;
-    const y = inset + cell.y * ih + gapPx / 2;
-    const w = cell.w * iw - gapPx;
-    const h = cell.h * ih - gapPx;
-    if (w <= 0 || h <= 0) continue;
-    const img = await loadImage(photo.src);
+  // Cells - load every image in parallel first so export stays fast.
+  const jobs = layout.cells.map((cell, i) => {
+    const photo = state.filled[i] ? byId.get(state.filled[i]) : undefined;
+    return photo ? { cell, i, src: photo.src } : null;
+  });
+  const loaded = await Promise.all(
+    jobs.map((j) => (j ? loadImage(j.src).catch(() => null) : Promise.resolve(null)))
+  );
+  jobs.forEach((j, k) => {
+    const img = loaded[k];
+    if (!j || !img) return;
+    const x = inset + j.cell.x * iw + gapPx / 2;
+    const y = inset + j.cell.y * ih + gapPx / 2;
+    const w = j.cell.w * iw - gapPx;
+    const h = j.cell.h * ih - gapPx;
+    if (w <= 0 || h <= 0) return;
     ctx.save();
     roundRectPath(ctx, x, y, w, h, radiusPx);
     ctx.clip();
+    const css = filterCss(state.filters[j.i]);
+    if (css !== "none") ctx.filter = css;
     drawCover(ctx, img, { x: x / cw, y: y / ch, w: w / cw, h: h / ch }, cw, ch);
     ctx.restore();
-  }
+  });
 
   // Text overlays
   for (const t of state.texts) {
@@ -148,6 +154,19 @@ export async function renderCollage(
     ctx.restore();
   }
 
+  // Emoji stickers
+  for (const s of state.stickers) {
+    const px = s.size * ch;
+    ctx.save();
+    ctx.translate(s.xf * cw, s.yf * ch);
+    ctx.rotate((s.rotation * Math.PI) / 180);
+    ctx.font = `${px}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(s.emoji, 0, 0);
+    ctx.restore();
+  }
+
   return canvas;
 }
 
@@ -171,17 +190,41 @@ export async function exportBlob(
   });
 }
 
-export async function downloadCollage(
+export type SaveResult = "shared" | "cancelled" | "downloaded";
+
+/**
+ * Save the collage. On phones this opens the native share sheet where "Save
+ * Image" adds it straight to Photos (no Files app). Desktop / unsupported
+ * browsers fall back to a normal PNG download.
+ */
+export async function saveCollage(
   state: CollageState,
   photos: Photo[]
-): Promise<void> {
+): Promise<SaveResult> {
   const blob = await exportBlob(state, photos);
+  const filename = `collage-${Date.now()}.png`;
+  const file = new File([blob], filename, { type: "image/png" });
+
+  const nav = navigator as Navigator & {
+    canShare?: (data: { files: File[] }) => boolean;
+  };
+  if (typeof nav.share === "function" && nav.canShare?.({ files: [file] })) {
+    try {
+      await nav.share({ files: [file], title: "Collage" });
+      return "shared";
+    } catch (err) {
+      if ((err as Error)?.name === "AbortError") return "cancelled";
+      // any other share failure -> fall through to download
+    }
+  }
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `collage-${Date.now()}.png`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return "downloaded";
 }

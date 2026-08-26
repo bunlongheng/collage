@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { FONTS, getBackground, getLayout, TEXT_PRESETS } from "@/lib/layouts";
+import { filterCss } from "@/lib/filters";
 import { clamp01, fitSize } from "@/lib/geometry";
 import type { CollageState, Photo, TextItem } from "@/lib/types";
 
@@ -10,9 +11,13 @@ type Props = {
   photos: Photo[];
   selectedCell: number | null;
   selectedTextId: string | null;
-  onSelectCell: (i: number) => void;
+  selectedStickerId: string | null;
+  onTapCell: (i: number) => void;
+  onCycleFilter: (i: number, dir: 1 | -1) => void;
   onSelectText: (id: string | null) => void;
   onMoveText: (id: string, xf: number, yf: number) => void;
+  onSelectSticker: (id: string | null) => void;
+  onMoveSticker: (id: string, xf: number, yf: number) => void;
   stageRef: React.RefObject<HTMLDivElement | null>;
 };
 
@@ -33,7 +38,7 @@ function useFit(aspect: [number, number]) {
   return { wrapRef, size };
 }
 
-function presetStyle(t: TextItem, h: number): CSSProperties {
+function textStyle(t: TextItem, h: number): CSSProperties {
   const p = TEXT_PRESETS[t.preset];
   const base: CSSProperties = {
     fontFamily: t.font ? FONTS[t.font].family : p.fontFamily,
@@ -47,28 +52,14 @@ function presetStyle(t: TextItem, h: number): CSSProperties {
     whiteSpace: "pre",
   };
   if (p.pill) {
-    return {
-      ...base,
-      background: "var(--color-accent)",
-      padding: `${t.size * h * 0.34}px ${t.size * h * 0.55}px`,
-      borderRadius: "999px",
-    };
+    return { ...base, background: "var(--color-accent)", padding: `${t.size * h * 0.34}px ${t.size * h * 0.55}px`, borderRadius: "999px" };
   }
-  return {
-    ...base,
-    textShadow: `0 ${t.size * h * 0.04}px ${t.size * h * 0.14}px rgba(0,0,0,0.35)`,
-  };
+  return { ...base, textShadow: `0 ${t.size * h * 0.04}px ${t.size * h * 0.14}px rgba(0,0,0,0.4)` };
 }
 
 export function Canvas({
-  state,
-  photos,
-  selectedCell,
-  selectedTextId,
-  onSelectCell,
-  onSelectText,
-  onMoveText,
-  stageRef,
+  state, photos, selectedCell, selectedTextId, selectedStickerId,
+  onTapCell, onCycleFilter, onSelectText, onMoveText, onSelectSticker, onMoveSticker, stageRef,
 }: Props) {
   const layout = getLayout(state.layoutId);
   const { wrapRef, size } = useFit(layout.aspect);
@@ -79,44 +70,37 @@ export function Canvas({
   const inset = (state.safe / 100) * minD * 0.2;
   const iw = Math.max(0, size.w - inset * 2);
   const ih = Math.max(0, size.h - inset * 2);
-  const drag = useRef<{ id: string } | null>(null);
 
-  function onPointerDownText(e: React.PointerEvent, id: string) {
+  const drag = useRef<{ kind: "text" | "sticker"; id: string } | null>(null);
+  const cellDown = useRef<{ i: number; x: number; y: number } | null>(null);
+
+  function startDrag(e: React.PointerEvent, kind: "text" | "sticker", id: string) {
     e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    drag.current = { id };
-    onSelectText(id);
+    drag.current = { kind, id };
+    if (kind === "text") onSelectText(id);
+    else onSelectSticker(id);
   }
-  function onPointerMove(e: React.PointerEvent) {
+  function onStagePointerMove(e: React.PointerEvent) {
     if (!drag.current || size.w === 0) return;
-    const rect = stageRef.current!.getBoundingClientRect();
-    onMoveText(
-      drag.current.id,
-      clamp01((e.clientX - rect.left) / rect.width),
-      clamp01((e.clientY - rect.top) / rect.height)
-    );
+    const r = stageRef.current!.getBoundingClientRect();
+    const xf = clamp01((e.clientX - r.left) / r.width);
+    const yf = clamp01((e.clientY - r.top) / r.height);
+    if (drag.current.kind === "text") onMoveText(drag.current.id, xf, yf);
+    else onMoveSticker(drag.current.id, xf, yf);
   }
 
   return (
     <div
       ref={wrapRef}
       className="relative grid min-h-0 flex-1 place-items-center overflow-hidden"
-      onPointerDown={() => onSelectText(null)}
+      onPointerDown={() => { onSelectText(null); onSelectSticker(null); }}
     >
       <div
         ref={stageRef}
         className="relative overflow-hidden rise"
-        style={{
-          width: size.w || 1,
-          height: size.h || 1,
-          background: getBackground(state.bgId).color,
-          // Outer frame stays square - the exported PNG is a rectangle, and
-          // Curve only rounds the photo cells (WYSIWYG).
-          borderRadius: 0,
-          boxShadow: "var(--shadow)",
-          touchAction: "none",
-        }}
-        onPointerMove={onPointerMove}
+        style={{ width: size.w || 1, height: size.h || 1, background: getBackground(state.bgId).color, boxShadow: "var(--shadow)", touchAction: "none" }}
+        onPointerMove={onStagePointerMove}
         onPointerUp={() => (drag.current = null)}
         onPointerCancel={() => (drag.current = null)}
         onPointerDown={(e) => e.stopPropagation()}
@@ -125,35 +109,41 @@ export function Canvas({
           const photo = state.filled[i] ? byId.get(state.filled[i]) : undefined;
           const active = selectedCell === i;
           return (
-            <button
+            <div
               key={i}
-              type="button"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => onSelectCell(i)}
-              className={`absolute overflow-hidden ${
-                photo ? "" : "grid place-items-center text-white/70"
-              }`}
+              role="button"
+              tabIndex={0}
+              aria-label={photo ? `Photo slot ${i + 1}, filled` : `Photo slot ${i + 1}, empty`}
+              onPointerDown={(e) => { e.stopPropagation(); cellDown.current = { i, x: e.clientX, y: e.clientY }; (e.target as HTMLElement).setPointerCapture(e.pointerId); }}
+              onPointerUp={(e) => {
+                const d = cellDown.current; cellDown.current = null;
+                if (!d || d.i !== i) return;
+                const dx = e.clientX - d.x, dy = e.clientY - d.y;
+                if (photo && Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) onCycleFilter(i, dx > 0 ? 1 : -1);
+                else if (Math.abs(dx) < 12 && Math.abs(dy) < 12) onTapCell(i);
+              }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onTapCell(i); } }}
+              className={`absolute overflow-hidden ${photo ? "cursor-pointer" : "grid cursor-pointer place-items-center text-black/30"}`}
               style={{
                 left: inset + cell.x * iw + gapPx / 2,
                 top: inset + cell.y * ih + gapPx / 2,
                 width: cell.w * iw - gapPx,
                 height: cell.h * ih - gapPx,
                 borderRadius: radiusPx,
-                backgroundColor: photo ? undefined : "rgba(120,120,128,0.16)",
+                backgroundColor: photo ? undefined : "rgba(120,120,128,0.14)",
                 backgroundImage: photo ? `url("${photo.src}")` : undefined,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
+                filter: photo ? filterCss(state.filters[i]) : undefined,
                 boxShadow: active ? "inset 0 0 0 3px var(--color-accent)" : undefined,
               }}
-              aria-label={photo ? `Photo slot ${i + 1}, filled` : `Photo slot ${i + 1}, empty`}
-              aria-pressed={active}
             >
               {!photo && (
-                <svg viewBox="0 0 24 24" className="size-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
+                <svg viewBox="0 0 24 24" className="size-7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden>
                   <path d="M12 5v14M5 12h14" />
                 </svg>
               )}
-            </button>
+            </div>
           );
         })}
 
@@ -162,18 +152,25 @@ export function Canvas({
             key={t.id}
             role="button"
             tabIndex={0}
-            onPointerDown={(e) => onPointerDownText(e, t.id)}
-            className={`absolute cursor-grab select-none active:cursor-grabbing ${
-              selectedTextId === t.id ? "outline outline-2 outline-accent outline-offset-4" : ""
-            }`}
-            style={{
-              left: `${t.xf * 100}%`,
-              top: `${t.yf * 100}%`,
-              transform: `translate(-50%, -50%) rotate(${t.rotation}deg)`,
-              ...presetStyle(t, size.h),
-            }}
+            onPointerDown={(e) => startDrag(e, "text", t.id)}
+            className={`absolute cursor-grab select-none active:cursor-grabbing ${selectedTextId === t.id ? "outline outline-2 outline-accent outline-offset-4" : ""}`}
+            style={{ left: `${t.xf * 100}%`, top: `${t.yf * 100}%`, transform: `translate(-50%, -50%) rotate(${t.rotation}deg)`, ...textStyle(t, size.h) }}
           >
             {t.text || "Text"}
+          </div>
+        ))}
+
+        {state.stickers.map((s) => (
+          <div
+            key={s.id}
+            role="button"
+            tabIndex={0}
+            aria-label={`Sticker ${s.emoji}`}
+            onPointerDown={(e) => startDrag(e, "sticker", s.id)}
+            className={`absolute cursor-grab select-none leading-none active:cursor-grabbing ${selectedStickerId === s.id ? "outline outline-2 outline-accent outline-offset-4" : ""}`}
+            style={{ left: `${s.xf * 100}%`, top: `${s.yf * 100}%`, transform: `translate(-50%, -50%) rotate(${s.rotation}deg)`, fontSize: `${s.size * size.h}px` }}
+          >
+            {s.emoji}
           </div>
         ))}
       </div>

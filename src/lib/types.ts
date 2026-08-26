@@ -47,11 +47,25 @@ export type Background = {
   color: string;
 };
 
+/** An emoji sticker placed on the collage. */
+export type StickerItem = {
+  id: string;
+  emoji: string;
+  xf: number;
+  yf: number;
+  /** Size as a fraction of canvas height. */
+  size: number;
+  rotation: number;
+};
+
 export type CollageState = {
   layoutId: string;
   /** cell index -> Photo id. */
   filled: Record<number, string>;
+  /** cell index -> filter id (grayscale, sepia, hdr, ...). */
+  filters: Record<number, string>;
   texts: TextItem[];
+  stickers: StickerItem[];
   gap: number;
   radius: number;
   /** Outer margin around the whole collage, 0..100. */
