@@ -39,6 +39,7 @@ export function Editor() {
   const [toast, setToast] = useState<string | null>(null);
   const idRef = useRef(1);
   const targetRef = useRef(0);
+  const toastTimer = useRef<number | undefined>(undefined);
   const fileRef = useRef<HTMLInputElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
@@ -75,7 +76,8 @@ export function Editor() {
 
   function flash(msg: string) {
     setToast(msg);
-    window.setTimeout(() => setToast(null), 1600);
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 1600);
   }
 
   function openPicker(start: number) {

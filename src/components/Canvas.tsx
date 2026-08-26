@@ -72,7 +72,8 @@ export function Canvas({
   const ih = Math.max(0, size.h - inset * 2);
 
   const drag = useRef<{ kind: "text" | "sticker"; id: string } | null>(null);
-  const cellDown = useRef<{ i: number; x: number; y: number } | null>(null);
+  const cellDrag = useRef<{ i: number; x0: number; y0: number; lastX: number; steps: number } | null>(null);
+  const STEP = 34; // px of horizontal swipe per filter change
 
   function startDrag(e: React.PointerEvent, kind: "text" | "sticker", id: string) {
     e.stopPropagation();
@@ -114,13 +115,25 @@ export function Canvas({
               role="button"
               tabIndex={0}
               aria-label={photo ? `Photo slot ${i + 1}, filled` : `Photo slot ${i + 1}, empty`}
-              onPointerDown={(e) => { e.stopPropagation(); cellDown.current = { i, x: e.clientX, y: e.clientY }; (e.target as HTMLElement).setPointerCapture(e.pointerId); }}
+              onPointerDown={(e) => { e.stopPropagation(); cellDrag.current = { i, x0: e.clientX, y0: e.clientY, lastX: e.clientX, steps: 0 }; (e.target as HTMLElement).setPointerCapture(e.pointerId); }}
+              onPointerMove={(e) => {
+                const d = cellDrag.current;
+                if (!d || d.i !== i || !photo) return;
+                // Cycle the filter live as the finger moves horizontally.
+                let dx = e.clientX - d.lastX;
+                while (Math.abs(dx) >= STEP) {
+                  const dir = dx > 0 ? 1 : -1;
+                  onCycleFilter(i, dir);
+                  d.lastX += dir * STEP;
+                  d.steps += 1;
+                  dx = e.clientX - d.lastX;
+                }
+              }}
               onPointerUp={(e) => {
-                const d = cellDown.current; cellDown.current = null;
+                const d = cellDrag.current; cellDrag.current = null;
                 if (!d || d.i !== i) return;
-                const dx = e.clientX - d.x, dy = e.clientY - d.y;
-                if (photo && Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) onCycleFilter(i, dx > 0 ? 1 : -1);
-                else if (Math.abs(dx) < 12 && Math.abs(dy) < 12) onTapCell(i);
+                const moved = Math.abs(e.clientX - d.x0) > 10 || Math.abs(e.clientY - d.y0) > 10;
+                if (d.steps === 0 && !moved) onTapCell(i);
               }}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onTapCell(i); } }}
               className={`absolute overflow-hidden ${photo ? "cursor-pointer" : "grid cursor-pointer place-items-center text-black/30"}`}
@@ -130,6 +143,7 @@ export function Canvas({
                 width: cell.w * iw - gapPx,
                 height: cell.h * ih - gapPx,
                 borderRadius: radiusPx,
+                touchAction: "none",
                 backgroundColor: photo ? undefined : "rgba(120,120,128,0.14)",
                 backgroundImage: photo ? `url("${photo.src}")` : undefined,
                 backgroundSize: "cover",

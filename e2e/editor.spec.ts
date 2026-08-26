@@ -20,6 +20,22 @@ test("selecting photos fills slots and reveals Save", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
 });
 
+test("swiping across a photo changes its filter", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
+  const cell = page.getByRole("button", { name: "Photo slot 1, filled" });
+  const box = await cell.boundingBox();
+  const cx = box!.x + box!.width / 2;
+  const cy = box!.y + box!.height / 2;
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx + 140, cy, { steps: 10 });
+  await page.mouse.up();
+  await expect(
+    page.getByText(/Warm|Cold|Dream|Dark|B&W|Noir|Sepia|HDR|Fade/)
+  ).toBeVisible();
+});
+
 test("adds an emoji sticker", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Stickers" }).click();
