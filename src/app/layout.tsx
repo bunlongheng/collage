@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import SwRegister from "./sw-register";
 
 const SITE = "https://collage-bheng.vercel.app";
 
@@ -72,7 +73,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        <SwRegister />
+      </body>
     </html>
   );
 }
