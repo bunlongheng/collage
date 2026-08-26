@@ -73,8 +73,12 @@ export function Canvas({
   const layout = getLayout(state.layoutId);
   const { wrapRef, size } = useFit(layout.aspect);
   const byId = new Map(photos.map((p) => [p.id, p]));
-  const gapPx = (state.gap / 100) * Math.min(size.w, size.h) * 0.12;
-  const radiusPx = (state.radius / 100) * Math.min(size.w, size.h) * 0.12;
+  const minD = Math.min(size.w, size.h);
+  const gapPx = (state.gap / 100) * minD * 0.12;
+  const radiusPx = (state.radius / 100) * minD * 0.12;
+  const inset = (state.safe / 100) * minD * 0.2;
+  const iw = Math.max(0, size.w - inset * 2);
+  const ih = Math.max(0, size.h - inset * 2);
   const drag = useRef<{ id: string } | null>(null);
 
   function onPointerDownText(e: React.PointerEvent, id: string) {
@@ -130,10 +134,10 @@ export function Canvas({
                 photo ? "" : "grid place-items-center text-white/70"
               }`}
               style={{
-                left: cell.x * size.w + gapPx / 2,
-                top: cell.y * size.h + gapPx / 2,
-                width: cell.w * size.w - gapPx,
-                height: cell.h * size.h - gapPx,
+                left: inset + cell.x * iw + gapPx / 2,
+                top: inset + cell.y * ih + gapPx / 2,
+                width: cell.w * iw - gapPx,
+                height: cell.h * ih - gapPx,
                 borderRadius: radiusPx,
                 backgroundColor: photo ? undefined : "rgba(120,120,128,0.16)",
                 backgroundImage: photo ? `url("${photo.src}")` : undefined,

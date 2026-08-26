@@ -54,5 +54,7 @@ export type CollageState = {
   texts: TextItem[];
   gap: number;
   radius: number;
+  /** Outer margin around the whole collage, 0..100. */
+  safe: number;
   bgId: string;
 };

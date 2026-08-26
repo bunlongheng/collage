@@ -81,8 +81,12 @@ export async function renderCollage(
   ctx.fillRect(0, 0, cw, ch);
 
   const byId = new Map(photos.map((p) => [p.id, p]));
-  const gapPx = (state.gap / 100) * Math.min(cw, ch) * 0.12;
-  const radiusPx = (state.radius / 100) * Math.min(cw, ch) * 0.12;
+  const minD = Math.min(cw, ch);
+  const gapPx = (state.gap / 100) * minD * 0.12;
+  const radiusPx = (state.radius / 100) * minD * 0.12;
+  const inset = (state.safe / 100) * minD * 0.2;
+  const iw = cw - inset * 2;
+  const ih = ch - inset * 2;
 
   // Cells
   for (let i = 0; i < layout.cells.length; i++) {
@@ -91,10 +95,10 @@ export async function renderCollage(
     const photo = byId.get(photoId);
     if (!photo) continue;
     const cell = layout.cells[i];
-    const x = cell.x * cw + gapPx / 2;
-    const y = cell.y * ch + gapPx / 2;
-    const w = cell.w * cw - gapPx;
-    const h = cell.h * ch - gapPx;
+    const x = inset + cell.x * iw + gapPx / 2;
+    const y = inset + cell.y * ih + gapPx / 2;
+    const w = cell.w * iw - gapPx;
+    const h = cell.h * ih - gapPx;
     if (w <= 0 || h <= 0) continue;
     const img = await loadImage(photo.src);
     ctx.save();

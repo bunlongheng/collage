@@ -1,16 +1,43 @@
 import { expect, test } from "@playwright/test";
 
-test("loads the editor with an auto-filled collage", async ({ page }) => {
+test("loads clean: empty slots and a Select photos prompt", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("banner").getByText("Collage")).toBeVisible();
-  await expect(page.getByText("Summer 2026")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Export" })).toBeVisible();
-  // Quad layout is pre-filled - slot 1 is filled on load, no clicks needed.
-  await expect(page.getByRole("button", { name: "Photo slot 1, filled" })).toBeVisible();
+  await expect(page).toHaveTitle(/Collage/);
+  await expect(page.getByRole("button", { name: "Select photos" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Photo slot 1, empty" })).toBeVisible();
+  // No always-on menu: Export only appears once there are photos.
+  await expect(page.getByRole("button", { name: "Export" })).toHaveCount(0);
 });
 
-test("toggles light and dark mode", async ({ page }) => {
+test("selecting photos fills slots and reveals Export", async ({ page }) => {
   await page.goto("/");
+  await page.locator('input[type=file]').setInputFiles([
+    "public/icon-512.png",
+    "public/icon-192.png",
+  ]);
+  await expect(page.getByRole("button", { name: "Photo slot 1, filled" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Photo slot 2, filled" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Export" })).toBeVisible();
+});
+
+test("layouts panel only shows when the tool is tapped", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Layout Quad" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Layouts" }).click();
+  await expect(page.getByRole("button", { name: "Layout Quad" })).toBeVisible();
+});
+
+test("adjust panel exposes safe area and curve", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText("Safe area")).toHaveCount(0);
+  await page.getByRole("button", { name: "Adjust" }).click();
+  await expect(page.getByText("Safe area")).toBeVisible();
+  await expect(page.getByText("Curve")).toBeVisible();
+});
+
+test("toggles light and dark mode from Adjust", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Adjust" }).click();
   const html = page.locator("html");
   const before = await html.evaluate((el) => el.classList.contains("dark"));
   await page.getByRole("button", { name: "Toggle dark mode" }).click();
@@ -18,48 +45,17 @@ test("toggles light and dark mode", async ({ page }) => {
   expect(after).toBe(!before);
 });
 
-test("photo picker stays hidden until a tile is tapped", async ({ page }) => {
+test("adds and removes a caption", async ({ page }) => {
   await page.goto("/");
-  // The image list is not shown by default.
-  await expect(page.getByText(/Photos ->/)).toHaveCount(0);
-  await page.getByRole("button", { name: "Photo slot 1, filled" }).click();
-  await expect(page.getByText("Photos -> slot 1")).toBeVisible();
-});
-
-test("uploading replaces the demo and fills slots in order", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Photo slot 1, filled" }).click();
-  await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
-  // First upload clears the starter gallery, drops in at slot 1, advances to 2.
-  await expect(page.getByText("Photos -> slot 2")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Photo slot 2, empty" })).toBeVisible();
-});
-
-test("layout row can be hidden from the header", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.getByRole("button", { name: "Layout Quad" })).toBeVisible();
-  await page.getByRole("button", { name: "Show or hide layouts" }).click();
-  await expect(page.getByRole("button", { name: "Layout Quad" })).toHaveCount(0);
-});
-
-test("switches layout and keeps it filled", async ({ page }) => {
-  await page.goto("/");
-  const story = page.getByRole("button", { name: "Layout Story split" });
-  await story.click();
-  await expect(story).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", { name: "Photo slot 1, filled" })).toBeVisible();
-});
-
-test("adds and removes a caption without leaving the screen", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Text", exact: true }).click();
+  await page.getByRole("button", { name: "Add text" }).click();
   await expect(page.getByLabel("Caption text")).toHaveValue("Your caption");
   await page.getByRole("button", { name: "Delete caption" }).click();
   await expect(page.getByText("Your caption")).toHaveCount(0);
 });
 
-test("exports a PNG download", async ({ page }) => {
+test("exports a PNG after adding a photo", async ({ page }) => {
   await page.goto("/");
+  await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export" }).click();
   const download = await downloadPromise;
