@@ -18,9 +18,17 @@ test("toggles light and dark mode", async ({ page }) => {
   expect(after).toBe(!before);
 });
 
+test("photo picker stays hidden until a tile is tapped", async ({ page }) => {
+  await page.goto("/");
+  // The image list is not shown by default.
+  await expect(page.getByText(/Photos ->/)).toHaveCount(0);
+  await page.getByRole("button", { name: "Photo slot 1, filled" }).click();
+  await expect(page.getByText("Photos -> slot 1")).toBeVisible();
+});
+
 test("uploading replaces the demo and fills slots in order", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("Photos -> slot 1")).toBeVisible();
+  await page.getByRole("button", { name: "Photo slot 1, filled" }).click();
   await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
   // First upload clears the starter gallery, drops in at slot 1, advances to 2.
   await expect(page.getByText("Photos -> slot 2")).toBeVisible();

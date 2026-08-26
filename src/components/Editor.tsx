@@ -62,6 +62,8 @@ export function Editor() {
   const [exporting, setExporting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showLayouts, setShowLayouts] = useState(true);
+  // The photo picker stays hidden until a slot (tile) is tapped.
+  const [pickerOpen, setPickerOpen] = useState(false);
   const idRef = useRef(1);
   const stageRef = useRef<HTMLDivElement>(null);
 
@@ -207,7 +209,7 @@ export function Editor() {
           photos={photos}
           selectedCell={selectedCell}
           selectedTextId={selectedTextId}
-          onSelectCell={(i) => { setSelectedCell(i); setSelectedTextId(null); }}
+          onSelectCell={(i) => { setSelectedCell(i); setPickerOpen(true); setSelectedTextId(null); }}
           onSelectText={setSelectedTextId}
           onMoveText={moveText}
           stageRef={stageRef}
@@ -222,6 +224,7 @@ export function Editor() {
         uploads={uploads}
         selectedCell={selectedCell}
         showLayouts={showLayouts}
+        showPhotos={pickerOpen}
         onSetLayout={setLayout}
         onPickPhoto={pickPhoto}
         onUpload={upload}

@@ -106,7 +106,9 @@ export function Canvas({
           width: size.w || 1,
           height: size.h || 1,
           background: getBackground(state.bgId).color,
-          borderRadius: Math.max(10, radiusPx * 0.6),
+          // Outer frame stays square - the exported PNG is a rectangle, and
+          // Curve only rounds the photo cells (WYSIWYG).
+          borderRadius: 0,
           boxShadow: "var(--shadow)",
           touchAction: "none",
         }}

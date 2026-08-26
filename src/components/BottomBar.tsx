@@ -10,6 +10,7 @@ type Props = {
   uploads: Photo[];
   selectedCell: number | null;
   showLayouts: boolean;
+  showPhotos: boolean;
   onSetLayout: (id: string) => void;
   onPickPhoto: (id: string) => void;
   onUpload: (files: FileList) => void;
@@ -22,6 +23,7 @@ export function BottomBar({
   uploads,
   selectedCell,
   showLayouts,
+  showPhotos,
   onSetLayout,
   onPickPhoto,
   onUpload,
@@ -56,41 +58,43 @@ export function BottomBar({
         </Row>
       )}
 
-      {/* Photos - the user's own uploads only */}
-      <Row label={selectedCell !== null ? `Photos -> slot ${selectedCell + 1}` : "Photos"}>
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          aria-label="Add photos from device"
-          className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border-2 border-dashed hair text-accent"
-        >
-          <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => e.target.files && onUpload(e.target.files)}
-        />
-        {uploads.length === 0 ? (
-          <span className="px-1 text-xs text-muted">Tap + to add your photos</span>
-        ) : (
-          uploads.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => onPickPhoto(p.id)}
-              aria-label={p.name}
-              className="h-14 w-14 shrink-0 overflow-hidden rounded-xl transition-transform active:scale-95"
-              style={{ backgroundImage: `url("${p.src}")`, backgroundSize: "cover", backgroundPosition: "center" }}
-            />
-          ))
-        )}
-      </Row>
+      {/* Photos - hidden until a slot is tapped; user's own uploads only */}
+      {showPhotos && (
+        <Row label={selectedCell !== null ? `Photos -> slot ${selectedCell + 1}` : "Photos"}>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            aria-label="Add photos from device"
+            className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border-2 border-dashed hair text-accent"
+          >
+            <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => e.target.files && onUpload(e.target.files)}
+          />
+          {uploads.length === 0 ? (
+            <span className="px-1 text-xs text-muted">Tap + to add your photos</span>
+          ) : (
+            uploads.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => onPickPhoto(p.id)}
+                aria-label={p.name}
+                className="h-14 w-14 shrink-0 overflow-hidden rounded-xl transition-transform active:scale-95"
+                style={{ backgroundImage: `url("${p.src}")`, backgroundSize: "cover", backgroundPosition: "center" }}
+              />
+            ))
+          )}
+        </Row>
+      )}
 
       {/* Actions */}
       <div className="flex items-center gap-2 overflow-x-auto px-4 py-2.5 no-bar">
