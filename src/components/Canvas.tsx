@@ -12,6 +12,7 @@ type Props = {
   selectedCell: number | null;
   selectedTextId: string | null;
   selectedStickerId: string | null;
+  filterMode: boolean;
   onTapCell: (i: number) => void;
   onCycleFilter: (i: number, dir: 1 | -1) => void;
   onSelectText: (id: string | null) => void;
@@ -58,7 +59,7 @@ function textStyle(t: TextItem, h: number): CSSProperties {
 }
 
 export function Canvas({
-  state, photos, selectedCell, selectedTextId, selectedStickerId,
+  state, photos, selectedCell, selectedTextId, selectedStickerId, filterMode,
   onTapCell, onCycleFilter, onSelectText, onMoveText, onSelectSticker, onMoveSticker, stageRef,
 }: Props) {
   const layout = getLayout(state.layoutId);
@@ -133,7 +134,11 @@ export function Canvas({
                 const d = cellDrag.current; cellDrag.current = null;
                 if (!d || d.i !== i) return;
                 const moved = Math.abs(e.clientX - d.x0) > 10 || Math.abs(e.clientY - d.y0) > 10;
-                if (d.steps === 0 && !moved) onTapCell(i);
+                if (d.steps === 0 && !moved) {
+                  // In filter mode, a tap flicks to the next filter; otherwise swap.
+                  if (filterMode && photo) onCycleFilter(i, 1);
+                  else onTapCell(i);
+                }
               }}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onTapCell(i); } }}
               className={`absolute overflow-hidden ${photo ? "cursor-pointer" : "grid cursor-pointer place-items-center text-black/30"}`}

@@ -35,6 +35,7 @@ export function Editor() {
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
   const [tool, setTool] = useState<Tool>(null);
+  const [filterMode, setFilterMode] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const idRef = useRef(1);
@@ -198,6 +199,9 @@ export function Editor() {
           <IconButton label="Layouts" active={tool === "layouts"} onClick={() => toggleTool("layouts")}>
             <LayoutGlyph layout={getLayout(state.layoutId)} px={18} />
           </IconButton>
+          <IconButton label="Filter" active={filterMode} onClick={() => { setFilterMode((v) => !v); setTool(null); setSelectedTextId(null); setSelectedStickerId(null); }}>
+            <FilterIcon />
+          </IconButton>
           <IconButton label="Add text" onClick={addText}><TextIcon /></IconButton>
           <IconButton label="Stickers" active={tool === "stickers"} onClick={() => toggleTool("stickers")}><SmileIcon /></IconButton>
           <IconButton label="Adjust" active={tool === "adjust"} onClick={() => toggleTool("adjust")}><SlidersIcon /></IconButton>
@@ -215,13 +219,14 @@ export function Editor() {
         </div>
       </header>
 
-      <div className="relative flex min-h-0 flex-1 flex-col md:mx-auto md:w-full md:max-w-3xl">
+      <div className="relative flex min-h-0 flex-1 flex-col pt-3 sm:pt-6 md:mx-auto md:w-full md:max-w-3xl">
         <Canvas
           state={state}
           photos={uploads}
           selectedCell={selectedCell}
           selectedTextId={selectedTextId}
           selectedStickerId={selectedStickerId}
+          filterMode={filterMode}
           onTapCell={onTapCell}
           onCycleFilter={onCycleFilter}
           onSelectText={setSelectedTextId}
@@ -286,6 +291,9 @@ function IconButton({ children, label, active, onClick }: { children: React.Reac
 
 function TextIcon() {
   return <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden><path d="M5 6h14M12 6v13M9 19h6" /></svg>;
+}
+function FilterIcon() {
+  return <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="9" cy="9" r="6" /><circle cx="15" cy="15" r="6" /></svg>;
 }
 function SmileIcon() {
   return <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M8.5 14a4 4 0 0 0 7 0" /><path d="M9 9.5h.01M15 9.5h.01" /></svg>;
