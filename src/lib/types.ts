@@ -23,10 +23,15 @@ export type Photo = {
 /** Named text styles so a caption looks good the instant it is added. */
 export type TextPreset = "headline" | "caption" | "sticker" | "signature";
 
+/** Font family choice, overrides the preset's default family when set. */
+export type FontKey = "sans" | "serif" | "mono" | "rounded";
+
 export type TextItem = {
   id: string;
   text: string;
   preset: TextPreset;
+  /** Optional font-family override. */
+  font?: FontKey;
   /** Center position as canvas fractions. */
   xf: number;
   yf: number;

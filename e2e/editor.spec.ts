@@ -18,12 +18,20 @@ test("toggles light and dark mode", async ({ page }) => {
   expect(after).toBe(!before);
 });
 
-test("tapping a photo fills the selected slot and advances", async ({ page }) => {
+test("uploading replaces the demo and fills slots in order", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("Photos -> slot 1")).toBeVisible();
-  await page.getByRole("button", { name: "Indigo" }).click();
-  // Selection advances so the next tap fills the next slot - fewer clicks.
+  await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
+  // First upload clears the starter gallery, drops in at slot 1, advances to 2.
   await expect(page.getByText("Photos -> slot 2")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Photo slot 2, empty" })).toBeVisible();
+});
+
+test("layout row can be hidden from the header", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Layout Quad" })).toBeVisible();
+  await page.getByRole("button", { name: "Show or hide layouts" }).click();
+  await expect(page.getByRole("button", { name: "Layout Quad" })).toHaveCount(0);
 });
 
 test("switches layout and keeps it filled", async ({ page }) => {

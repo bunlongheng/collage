@@ -1,4 +1,4 @@
-import type { Background, Layout, TextPreset } from "./types";
+import type { Background, FontKey, Layout, TextPreset } from "./types";
 
 /**
  * Every layout is expressed as fractional cells (0..1) so the on-screen
@@ -117,6 +117,16 @@ export type PresetStyle = {
 const SANS =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 const SERIF = 'Georgia, "Times New Roman", serif';
+const MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+const ROUNDED = 'ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, sans-serif';
+
+/** Selectable font families - override a preset's default family. */
+export const FONTS: Record<FontKey, { label: string; family: string }> = {
+  sans: { label: "Sans", family: SANS },
+  serif: { label: "Serif", family: SERIF },
+  mono: { label: "Mono", family: MONO },
+  rounded: { label: "Round", family: ROUNDED },
+};
 
 export const TEXT_PRESETS: Record<TextPreset, PresetStyle> = {
   headline: {

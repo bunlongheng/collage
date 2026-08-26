@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { getBackground, getLayout, TEXT_PRESETS } from "@/lib/layouts";
+import { FONTS, getBackground, getLayout, TEXT_PRESETS } from "@/lib/layouts";
 import { clamp01, fitSize } from "@/lib/geometry";
 import type { CollageState, Photo, TextItem } from "@/lib/types";
 
@@ -36,7 +36,7 @@ function useFit(aspect: [number, number]) {
 function presetStyle(t: TextItem, h: number): CSSProperties {
   const p = TEXT_PRESETS[t.preset];
   const base: CSSProperties = {
-    fontFamily: p.fontFamily,
+    fontFamily: t.font ? FONTS[t.font].family : p.fontFamily,
     fontWeight: p.weight,
     fontStyle: p.italic ? "italic" : "normal",
     letterSpacing: `${p.tracking}em`,

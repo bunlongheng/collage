@@ -1,4 +1,4 @@
-import { getBackground, getLayout, TEXT_PRESETS } from "./layouts";
+import { FONTS, getBackground, getLayout, TEXT_PRESETS } from "./layouts";
 import { coverCrop } from "./geometry";
 import type { CollageState, Photo, Rect } from "./types";
 
@@ -108,7 +108,7 @@ export async function renderCollage(
   for (const t of state.texts) {
     const preset = TEXT_PRESETS[t.preset];
     const fontPx = t.size * ch;
-    const family = resolveFamily(preset.fontFamily);
+    const family = resolveFamily(t.font ? FONTS[t.font].family : preset.fontFamily);
     const label = preset.uppercase ? t.text.toUpperCase() : t.text;
     ctx.save();
     ctx.translate(t.xf * cw, t.yf * ch);

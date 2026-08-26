@@ -6,38 +6,37 @@ import { Mark } from "./Mark";
 import { ThemeToggle } from "./ThemeToggle";
 import { BottomBar } from "./BottomBar";
 import { TextToolbar } from "./TextToolbar";
+import { LayoutGlyph } from "./LayoutGlyph";
 import { GALLERY } from "@/lib/gallery";
 import { getLayout, TEXT_PRESETS } from "@/lib/layouts";
 import { downloadCollage } from "@/lib/export";
 import { clamp01 } from "@/lib/geometry";
 import type { CollageState, Photo, TextItem } from "@/lib/types";
 
-/** Fill every empty cell of the layout with distinct gallery art. */
-function autoFill(filled: Record<number, string>, layoutId: string): Record<number, string> {
+/** Fill every empty cell of the layout from a photo pool (uploads, or the
+ * starter gallery when the user has not added their own yet). */
+function autoFill(
+  filled: Record<number, string>,
+  layoutId: string,
+  pool: Photo[]
+): Record<number, string> {
+  if (!pool.length) return filled;
   const layout = getLayout(layoutId);
   const used = new Set(Object.values(filled));
-  const pool = GALLERY.filter((g) => !used.has(g.id));
+  const avail = pool.filter((p) => !used.has(p.id));
   let p = 0;
   const next = { ...filled };
   for (let i = 0; i < layout.cells.length; i++) {
     if (next[i]) continue;
-    next[i] = (pool[p++] ?? GALLERY[i % GALLERY.length]).id;
+    next[i] = (avail[p++] ?? pool[i % pool.length]).id;
   }
-  return next;
-}
-
-function shuffled(layoutId: string): Record<number, string> {
-  const layout = getLayout(layoutId);
-  const pool = [...GALLERY].sort(() => Math.random() - 0.5);
-  const next: Record<number, string> = {};
-  for (let i = 0; i < layout.cells.length; i++) next[i] = pool[i % pool.length].id;
   return next;
 }
 
 const INITIAL_LAYOUT = "grid-4";
 const INITIAL: CollageState = {
   layoutId: INITIAL_LAYOUT,
-  filled: autoFill({}, INITIAL_LAYOUT),
+  filled: autoFill({}, INITIAL_LAYOUT, GALLERY),
   texts: [
     {
       id: "t0",
@@ -51,7 +50,7 @@ const INITIAL: CollageState = {
     },
   ],
   gap: 14,
-  radius: 34,
+  radius: 0, // None by default - add curve from Adjust
   bgId: "snow",
 };
 
@@ -62,9 +61,12 @@ export function Editor() {
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [showLayouts, setShowLayouts] = useState(true);
   const idRef = useRef(1);
   const stageRef = useRef<HTMLDivElement>(null);
 
+  // Combined pool is only for resolving ids to sources when rendering. The
+  // picker row shows the user's own uploads only - never the starter gallery.
   const photos = useMemo(() => [...uploads, ...GALLERY], [uploads]);
   const selectedText = state.texts.find((t) => t.id === selectedTextId) ?? null;
   const cellCount = getLayout(state.layoutId).cells.length;
@@ -101,11 +103,14 @@ export function Editor() {
     setSelectedCell((target + 1) % cellCount);
   }
 
-  // Upload -> photos auto-drop into slots in order. Fewest clicks for real users.
+  // Upload -> photos auto-drop into slots in order. The FIRST upload clears the
+  // starter demo so the user only ever sees their own images (never mixed).
   function upload(files: FileList) {
     const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
     if (!list.length) return;
-    let slot = selectedCell ?? 0;
+    const fresh = uploads.length === 0;
+    let slot = fresh ? 0 : selectedCell ?? 0;
+    if (fresh) setState((s) => ({ ...s, filled: {} }));
     list.forEach((file) => {
       const reader = new FileReader();
       const cell = slot++ % cellCount;
@@ -117,23 +122,21 @@ export function Editor() {
       };
       reader.readAsDataURL(file);
     });
-    setSelectedCell((slot % cellCount));
+    setSelectedCell(slot % cellCount);
   }
 
-  // Switch layout -> keep photos, auto-fill any new empty slots. Never blank.
+  // Switch layout -> keep photos, auto-fill any new empty slots from the user's
+  // own uploads (or the starter gallery only while they have none yet).
   function setLayout(id: string) {
-    setState((s) => ({ ...s, layoutId: id, filled: autoFill(s.filled, id) }));
+    const pool = uploads.length ? uploads : GALLERY;
+    setState((s) => ({ ...s, layoutId: id, filled: autoFill(s.filled, id, pool) }));
     setSelectedCell(0);
-  }
-
-  function shuffle() {
-    setState((s) => ({ ...s, filled: shuffled(s.layoutId) }));
   }
 
   function addText() {
     const id = `t${idRef.current++}`;
     const item: TextItem = {
-      id, text: "Your caption", preset: "headline", xf: 0.5, yf: 0.5,
+      id, text: "Your caption", preset: "headline", xf: 0.5, yf: 0.88,
       size: TEXT_PRESETS.headline.size, color: "#ffffff", rotation: 0,
     };
     setState((s) => ({ ...s, texts: [...s.texts, item] }));
@@ -174,6 +177,17 @@ export function Editor() {
           <span className="text-lg font-semibold tracking-tight text-ink">Collage</span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowLayouts((v) => !v)}
+            aria-label="Show or hide layouts"
+            aria-pressed={showLayouts}
+            className={`grid size-10 place-items-center rounded-full border transition-colors ${
+              showLayouts ? "border-accent text-accent" : "hair text-ink hover:bg-surface-2"
+            }`}
+          >
+            <LayoutGlyph layout={getLayout(state.layoutId)} px={18} />
+          </button>
           <ThemeToggle />
           <button
             type="button"
@@ -205,13 +219,13 @@ export function Editor() {
 
       <BottomBar
         state={state}
-        photos={photos}
+        uploads={uploads}
         selectedCell={selectedCell}
+        showLayouts={showLayouts}
         onSetLayout={setLayout}
         onPickPhoto={pickPhoto}
         onUpload={upload}
         onAddText={addText}
-        onShuffle={shuffle}
         onSetStyle={(patch) => setState((s) => ({ ...s, ...patch }))}
       />
 

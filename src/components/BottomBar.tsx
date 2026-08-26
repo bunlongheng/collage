@@ -2,29 +2,30 @@
 
 import { useRef, useState } from "react";
 import { BACKGROUNDS, LAYOUTS } from "@/lib/layouts";
+import { LayoutGlyph } from "./LayoutGlyph";
 import type { CollageState, Photo } from "@/lib/types";
 
 type Props = {
   state: CollageState;
-  photos: Photo[];
+  uploads: Photo[];
   selectedCell: number | null;
+  showLayouts: boolean;
   onSetLayout: (id: string) => void;
   onPickPhoto: (id: string) => void;
   onUpload: (files: FileList) => void;
   onAddText: () => void;
-  onShuffle: () => void;
   onSetStyle: (patch: Partial<CollageState>) => void;
 };
 
 export function BottomBar({
   state,
-  photos,
+  uploads,
   selectedCell,
+  showLayouts,
   onSetLayout,
   onPickPhoto,
   onUpload,
   onAddText,
-  onShuffle,
   onSetStyle,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -32,47 +33,30 @@ export function BottomBar({
 
   return (
     <div className="safe-b shrink-0 border-t hair bg-surface/95 backdrop-blur md:mx-auto md:w-full md:max-w-3xl">
-      {/* Layouts */}
-      <Row label="Layouts">
-        {LAYOUTS.map((l) => {
-          const active = state.layoutId === l.id;
-          const [aw, ah] = l.aspect;
-          return (
-            <button
-              key={l.id}
-              type="button"
-              onClick={() => onSetLayout(l.id)}
-              aria-label={`Layout ${l.name}`}
-              aria-pressed={active}
-              className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border-2 bg-surface-2 transition-colors ${
-                active ? "border-accent" : "border-transparent"
-              }`}
-            >
-              <span className="absolute inset-0 grid place-items-center">
-                <span
-                  className="relative block"
-                  style={{ width: aw >= ah ? 30 : (30 * aw) / ah, height: ah >= aw ? 30 : (30 * ah) / aw }}
-                >
-                  {l.cells.map((c, i) => (
-                    <span
-                      key={i}
-                      className="absolute rounded-[2px] bg-ink/30"
-                      style={{
-                        left: `${c.x * 100 + 4}%`,
-                        top: `${c.y * 100 + 4}%`,
-                        width: `${c.w * 100 - 8}%`,
-                        height: `${c.h * 100 - 8}%`,
-                      }}
-                    />
-                  ))}
-                </span>
-              </span>
-            </button>
-          );
-        })}
-      </Row>
+      {/* Layouts - hideable from the header */}
+      {showLayouts && (
+        <Row label="Layouts">
+          {LAYOUTS.map((l) => {
+            const active = state.layoutId === l.id;
+            return (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => onSetLayout(l.id)}
+                aria-label={`Layout ${l.name}`}
+                aria-pressed={active}
+                className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl border-2 bg-surface-2 text-ink transition-colors ${
+                  active ? "border-accent" : "border-transparent"
+                }`}
+              >
+                <LayoutGlyph layout={l} px={28} />
+              </button>
+            );
+          })}
+        </Row>
+      )}
 
-      {/* Photos */}
+      {/* Photos - the user's own uploads only */}
       <Row label={selectedCell !== null ? `Photos -> slot ${selectedCell + 1}` : "Photos"}>
         <button
           type="button"
@@ -92,28 +76,25 @@ export function BottomBar({
           className="hidden"
           onChange={(e) => e.target.files && onUpload(e.target.files)}
         />
-        {photos.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => onPickPhoto(p.id)}
-            aria-label={p.name}
-            className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl transition-transform active:scale-95"
-            style={{ backgroundImage: `url("${p.src}")`, backgroundSize: "cover", backgroundPosition: "center" }}
-          >
-            {p.uploaded && (
-              <span className="absolute bottom-0.5 right-0.5 rounded bg-black/55 px-1 text-[8px] font-semibold text-white">
-                you
-              </span>
-            )}
-          </button>
-        ))}
+        {uploads.length === 0 ? (
+          <span className="px-1 text-xs text-muted">Tap + to add your photos</span>
+        ) : (
+          uploads.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onPickPhoto(p.id)}
+              aria-label={p.name}
+              className="h-14 w-14 shrink-0 overflow-hidden rounded-xl transition-transform active:scale-95"
+              style={{ backgroundImage: `url("${p.src}")`, backgroundSize: "cover", backgroundPosition: "center" }}
+            />
+          ))
+        )}
       </Row>
 
       {/* Actions */}
       <div className="flex items-center gap-2 overflow-x-auto px-4 py-2.5 no-bar">
         <Chip onClick={onAddText} icon={<TextIcon />}>Text</Chip>
-        <Chip onClick={onShuffle} icon={<ShuffleIcon />}>Shuffle</Chip>
         <Chip onClick={() => setShowAdjust((v) => !v)} icon={<SlidersIcon />} active={showAdjust}>
           Adjust
         </Chip>
@@ -136,7 +117,7 @@ export function BottomBar({
       {showAdjust && (
         <div className="flex items-center gap-5 border-t hair px-4 py-3">
           <Slider label="Spacing" value={state.gap} onChange={(v) => onSetStyle({ gap: v })} />
-          <Slider label="Corners" value={state.radius} onChange={(v) => onSetStyle({ radius: v })} />
+          <Slider label="Curve" value={state.radius} onChange={(v) => onSetStyle({ radius: v })} />
         </div>
       )}
     </div>
@@ -197,13 +178,6 @@ function TextIcon() {
   return (
     <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
       <path d="M5 6h14M12 6v13M9 19h6" />
-    </svg>
-  );
-}
-function ShuffleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M16 3h5v5M4 20l17-17M21 16v5h-5M15 15l6 6M4 4l5 5" />
     </svg>
   );
 }
