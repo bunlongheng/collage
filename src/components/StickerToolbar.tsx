@@ -1,5 +1,6 @@
 "use client";
 
+import { emojiSrc } from "@/lib/emoji";
 import type { StickerItem } from "@/lib/types";
 
 type Props = {
@@ -11,7 +12,7 @@ type Props = {
 export function StickerToolbar({ sticker, onUpdate, onDelete }: Props) {
   return (
     <div className="pointer-events-auto absolute inset-x-3 top-3 z-20 flex items-center gap-3 rounded-2xl border hair bg-surface/95 p-3 shadow-[var(--shadow)] backdrop-blur rise md:mx-auto md:max-w-md">
-      <span className="text-2xl leading-none" aria-hidden>{sticker.emoji}</span>
+      <img src={emojiSrc(sticker.code)} alt="" className="size-7 shrink-0" draggable={false} />
       <label className="flex flex-1 items-center gap-2">
         <span className="text-xs text-muted">Size</span>
         <input

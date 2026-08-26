@@ -47,10 +47,11 @@ export type Background = {
   color: string;
 };
 
-/** An emoji sticker placed on the collage. */
+/** An emoji sticker placed on the collage (HD vector, referenced by Twemoji code). */
 export type StickerItem = {
   id: string;
   emoji: string;
+  code: string;
   xf: number;
   yf: number;
   /** Size as a fraction of canvas height. */
@@ -62,8 +63,8 @@ export type CollageState = {
   layoutId: string;
   /** cell index -> Photo id. */
   filled: Record<number, string>;
-  /** cell index -> filter id (grayscale, sepia, hdr, ...). */
-  filters: Record<number, string>;
+  /** One filter applied to the whole collage (grayscale, sepia, hdr, ...). */
+  filter: string;
   texts: TextItem[];
   stickers: StickerItem[];
   gap: number;

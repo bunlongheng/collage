@@ -41,9 +41,11 @@ scales to a CDN edge with zero infrastructure.
   your camera roll.
 - **Clean, phone-first** - nothing on screen but your collage; tools reveal their
   controls only when tapped. No always-on menus.
-- **Filters** - swipe across any photo to flick through Warm, Cold, Dream, Dark,
-  B&W, Noir, Sepia, HDR and Fade. Applied identically in the preview and export.
-- **Stickers** - tap in emoji stickers, then drag, resize and spin them.
+- **Filters** - swipe across the collage (or tap the Filter icon) to flick the
+  whole thing through Warm, Cold, Dream, Dark, B&W, Noir, Sepia, HDR and Fade.
+  Applied identically in the preview and export.
+- **Stickers** - tap in HD emoji stickers (die-cut white outline + shadow), then
+  drag, resize and spin them.
 - **Text** - captions with font (sans/serif/mono/round), color, and top/middle/
   bottom placement.
 - **Saves to Photos** - on a phone, Save opens the share sheet so "Save Image"
@@ -152,6 +154,11 @@ Next.js 16 (App Router, static) · React 19 · TypeScript · Tailwind CSS v4 ·
 Canvas 2D export · Vitest · Playwright · Vercel.
 
 No database, no auth, no server state - by design.
+
+## Credits
+
+Emoji stickers are [Twemoji](https://github.com/jdecked/twemoji) (graphics licensed
+CC-BY 4.0), bundled as SVG so they stay crisp at any size.
 
 ## License
 

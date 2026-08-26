@@ -36,11 +36,10 @@ test("swiping across a photo changes its filter", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("filter mode: tapping a photo flicks to the next filter", async ({ page }) => {
+test("Filter button changes the whole-collage filter", async ({ page }) => {
   await page.goto("/");
   await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
   await page.getByRole("button", { name: "Filter" }).click();
-  await page.getByRole("button", { name: "Photo slot 1, filled" }).click();
   await expect(
     page.getByText(/Warm|Cold|Dream|Dark|B&W|Noir|Sepia|HDR|Fade/)
   ).toBeVisible();

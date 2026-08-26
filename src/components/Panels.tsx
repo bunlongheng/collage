@@ -1,7 +1,7 @@
 "use client";
 
 import { BACKGROUNDS, LAYOUTS } from "@/lib/layouts";
-import { EMOJI } from "@/lib/emoji";
+import { EMOJI, emojiSrc, type Emoji } from "@/lib/emoji";
 import { LayoutGlyph } from "./LayoutGlyph";
 import { ThemeToggle } from "./ThemeToggle";
 import type { CollageState } from "@/lib/types";
@@ -48,19 +48,19 @@ export function LayoutsPanel({
   );
 }
 
-export function StickersPanel({ onPick }: { onPick: (emoji: string) => void }) {
+export function StickersPanel({ onPick }: { onPick: (e: Emoji) => void }) {
   return (
     <Shell>
       <div className="grid max-h-40 grid-cols-8 gap-1 overflow-y-auto no-bar sm:grid-cols-12">
         {EMOJI.map((e) => (
           <button
-            key={e}
+            key={e.code}
             type="button"
             onClick={() => onPick(e)}
-            aria-label={`Add ${e}`}
-            className="grid aspect-square place-items-center rounded-lg text-2xl transition-colors hover:bg-surface-2"
+            aria-label={`Add ${e.char}`}
+            className="grid aspect-square place-items-center rounded-lg p-1.5 transition-colors hover:bg-surface-2"
           >
-            {e}
+            <img src={emojiSrc(e.code)} alt="" className="size-full" draggable={false} />
           </button>
         ))}
       </div>

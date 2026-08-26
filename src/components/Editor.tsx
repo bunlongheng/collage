@@ -11,13 +11,14 @@ import { getLayout, TEXT_PRESETS } from "@/lib/layouts";
 import { cycleFilter, FILTERS } from "@/lib/filters";
 import { saveCollage } from "@/lib/export";
 import { clamp01 } from "@/lib/geometry";
+import type { Emoji } from "@/lib/emoji";
 import type { CollageState, Photo, StickerItem, TextItem } from "@/lib/types";
 
 const INITIAL_LAYOUT = "grid-4";
 const INITIAL: CollageState = {
   layoutId: INITIAL_LAYOUT,
   filled: {},
-  filters: {},
+  filter: "none",
   texts: [],
   stickers: [],
   gap: 14,
@@ -35,7 +36,6 @@ export function Editor() {
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
   const [tool, setTool] = useState<Tool>(null);
-  const [filterMode, setFilterMode] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const idRef = useRef(1);
@@ -111,10 +111,13 @@ export function Editor() {
     openPicker(i);
   }
 
-  function onCycleFilter(i: number, dir: 1 | -1) {
-    const next = cycleFilter(state.filters[i], dir);
-    setState((s) => ({ ...s, filters: { ...s.filters, [i]: next } }));
-    flash(FILTERS.find((f) => f.id === next)?.label ?? "Filter");
+  // One filter for the whole collage.
+  function cycle(dir: 1 | -1) {
+    setState((s) => {
+      const next = cycleFilter(s.filter, dir);
+      flash(FILTERS.find((f) => f.id === next)?.label ?? "Filter");
+      return { ...s, filter: next };
+    });
   }
 
   function setLayout(id: string) {
@@ -145,9 +148,9 @@ export function Editor() {
     setSelectedTextId(null);
   }
 
-  function addSticker(emoji: string) {
+  function addSticker(e: Emoji) {
     const id = `s${idRef.current++}`;
-    const item: StickerItem = { id, emoji, xf: 0.5, yf: 0.5, size: 0.16, rotation: 0 };
+    const item: StickerItem = { id, emoji: e.char, code: e.code, xf: 0.5, yf: 0.5, size: 0.16, rotation: 0 };
     setState((s) => ({ ...s, stickers: [...s.stickers, item] }));
     setSelectedTextId(null);
     setSelectedStickerId(id);
@@ -201,7 +204,7 @@ export function Editor() {
           </IconButton>
           {hasPhotos && (
             <>
-              <IconButton label="Filter" active={filterMode} onClick={() => { setFilterMode((v) => !v); setTool(null); setSelectedTextId(null); setSelectedStickerId(null); }}>
+              <IconButton label="Filter" onClick={() => cycle(1)}>
                 <FilterIcon />
               </IconButton>
               <IconButton label="Add text" onClick={addText}><TextIcon /></IconButton>
@@ -239,9 +242,8 @@ export function Editor() {
           selectedCell={selectedCell}
           selectedTextId={selectedTextId}
           selectedStickerId={selectedStickerId}
-          filterMode={filterMode}
           onTapCell={onTapCell}
-          onCycleFilter={onCycleFilter}
+          onCycleFilter={cycle}
           onSelectText={setSelectedTextId}
           onMoveText={moveText}
           onSelectSticker={setSelectedStickerId}

@@ -108,7 +108,7 @@ export async function renderCollage(
     ctx.save();
     roundRectPath(ctx, x, y, w, h, radiusPx);
     ctx.clip();
-    const css = filterCss(state.filters[j.i]);
+    const css = filterCss(state.filter);
     if (css !== "none") ctx.filter = css;
     drawCover(ctx, img, { x: x / cw, y: y / ch, w: w / cw, h: h / ch }, cw, ch);
     ctx.restore();
@@ -154,18 +154,29 @@ export async function renderCollage(
     ctx.restore();
   }
 
-  // Emoji stickers
-  for (const s of state.stickers) {
+  // Emoji stickers - die-cut look: HD vector emoji on a white rounded pad + shadow.
+  const stickerImgs = await Promise.all(
+    state.stickers.map((s) => loadImage(`/emoji/${s.code}.svg`).catch(() => null))
+  );
+  state.stickers.forEach((s, k) => {
+    const img = stickerImgs[k];
     const px = s.size * ch;
+    const pad = px * 0.24;
+    const box = px + pad * 2;
     ctx.save();
     ctx.translate(s.xf * cw, s.yf * ch);
     ctx.rotate((s.rotation * Math.PI) / 180);
-    ctx.font = `${px}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(s.emoji, 0, 0);
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.3)";
+    ctx.shadowBlur = px * 0.16;
+    ctx.shadowOffsetY = px * 0.07;
+    ctx.fillStyle = "#ffffff";
+    roundRectPath(ctx, -box / 2, -box / 2, box, box, box * 0.3);
+    ctx.fill();
     ctx.restore();
-  }
+    if (img) ctx.drawImage(img, -px / 2, -px / 2, px, px);
+    ctx.restore();
+  });
 
   return canvas;
 }
