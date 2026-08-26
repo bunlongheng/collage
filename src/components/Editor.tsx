@@ -190,7 +190,7 @@ export function Editor() {
 
   return (
     <div className="flex h-[100dvh] flex-col bg-bg">
-      <header className="safe-t flex shrink-0 items-center justify-between gap-2 px-4 py-3 md:mx-auto md:w-full md:max-w-3xl">
+      <header className="flex shrink-0 items-center justify-between gap-2 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+1.5rem)] md:mx-auto md:w-full md:max-w-3xl">
         <div className="flex items-center gap-2">
           <Mark className="size-7 text-ink" />
           <span className="hidden text-lg font-semibold tracking-tight text-ink sm:inline">Collage</span>
