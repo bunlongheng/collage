@@ -10,6 +10,7 @@ import { StickerToolbar } from "./StickerToolbar";
 import { getLayout, TEXT_PRESETS } from "@/lib/layouts";
 import { cycleFilter, FILTERS } from "@/lib/filters";
 import { saveCollage } from "@/lib/export";
+import { readImageFile, isImageFile } from "@/lib/image";
 import { clamp01 } from "@/lib/geometry";
 import type { Emoji } from "@/lib/emoji";
 import type { CollageState, Photo, StickerItem, TextItem } from "@/lib/types";
@@ -87,19 +88,19 @@ export function Editor() {
   }
 
   function onFiles(files: FileList) {
-    const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    const list = Array.from(files).filter(isImageFile);
     if (!list.length) return;
-    let slot = targetRef.current;
-    list.forEach((file) => {
-      const reader = new FileReader();
-      const cell = slot++ % cellCount;
-      reader.onload = () => {
-        const id = `u${idRef.current++}`;
-        const photo: Photo = { id, name: file.name, src: String(reader.result), uploaded: true };
-        setUploads((u) => [photo, ...u]);
-        setState((s) => ({ ...s, filled: { ...s.filled, [cell]: id } }));
-      };
-      reader.readAsDataURL(file);
+    const start = targetRef.current;
+    list.forEach((file, idx) => {
+      const cell = (start + idx) % cellCount;
+      readImageFile(file)
+        .then((src) => {
+          const id = `u${idRef.current++}`;
+          const photo: Photo = { id, name: file.name, src, uploaded: true };
+          setUploads((u) => [photo, ...u]);
+          setState((s) => ({ ...s, filled: { ...s.filled, [cell]: id } }));
+        })
+        .catch(() => flash("Couldn't read that photo"));
     });
     setSelectedCell(null);
   }
@@ -127,7 +128,7 @@ export function Editor() {
   function addText() {
     const id = `t${idRef.current++}`;
     const item: TextItem = {
-      id, text: "Your caption", preset: "headline", xf: 0.5, yf: 0.85,
+      id, text: "Texts", preset: "headline", xf: 0.5, yf: 0.85,
       size: TEXT_PRESETS.headline.size, color: "#ffffff", rotation: 0,
     };
     setState((s) => ({ ...s, texts: [...s.texts, item] }));
@@ -261,7 +262,7 @@ export function Editor() {
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.heic,.heif,image/heic,image/heif"
         multiple
         className="hidden"
         onChange={(e) => { if (e.target.files) onFiles(e.target.files); e.target.value = ""; }}

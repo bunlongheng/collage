@@ -80,13 +80,13 @@ test("toggles light and dark mode from Adjust", async ({ page }) => {
   expect(after).toBe(!before);
 });
 
-test("adds and removes a caption", async ({ page }) => {
+test("adds and removes text", async ({ page }) => {
   await page.goto("/");
   await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
   await page.getByRole("button", { name: "Add text" }).click();
-  await expect(page.getByLabel("Caption text")).toHaveValue("Your caption");
-  await page.getByRole("button", { name: "Delete caption" }).click();
-  await expect(page.getByText("Your caption")).toHaveCount(0);
+  await expect(page.getByLabel("Text", { exact: true })).toHaveValue("Texts");
+  await page.getByRole("button", { name: "Delete text" }).click();
+  await expect(page.getByText("Texts")).toHaveCount(0);
 });
 
 test("saves a PNG after adding a photo", async ({ page }) => {

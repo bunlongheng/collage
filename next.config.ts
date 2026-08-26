@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 // Collage is fully client-side and uses data:/blob: URIs for images and export,
 // so the policy allows those while keeping everything else locked to self.
 // React needs eval() for dev-only debugging; production stays strict.
+// React needs eval() for dev-only debugging; production stays strict.
 const isDev = process.env.NODE_ENV !== "production";
 const scriptSrc = `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`;
 const csp = [
