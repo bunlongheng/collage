@@ -48,8 +48,11 @@ scales to a CDN edge with zero infrastructure.
   drag, resize and spin them.
 - **Text** - captions with font (sans/serif/mono/round), color, and top/middle/
   bottom placement.
-- **Saves to Photos** - on a phone, Save opens the share sheet so "Save Image"
-  drops it straight into your camera roll (desktop downloads a PNG).
+- **Export for any display** - pick the collage's own size, this screen, a
+  MacBook / 4K / portrait monitor, or iPhone / iPad wallpaper; the collage is
+  centered on the background at full sharpness, never stretched. On a phone the
+  share sheet's "Save Image" drops it straight into your camera roll (desktop
+  downloads a PNG).
 - **Instant** - system fonts (SF on iPhone), no web-font downloads, static SSG -
   it paints immediately.
 - **Photos in, PNG out** - pick from the built-in gallery or upload your own from

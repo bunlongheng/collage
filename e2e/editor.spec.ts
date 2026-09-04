@@ -5,11 +5,11 @@ test("loads clean: empty slots and a Select photos prompt", async ({ page }) => 
   await expect(page).toHaveTitle(/Collage/);
   await expect(page.getByRole("button", { name: "Select 4 photos" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Photo slot 1, empty" })).toBeVisible();
-  // No always-on menu: Save only appears once there are photos.
-  await expect(page.getByRole("button", { name: "Save" })).toHaveCount(0);
+  // No always-on menu: Export only appears once there are photos.
+  await expect(page.getByRole("button", { name: "Export", exact: true })).toHaveCount(0);
 });
 
-test("selecting photos fills slots and reveals Save", async ({ page }) => {
+test("selecting photos fills slots and reveals Export", async ({ page }) => {
   await page.goto("/");
   await page.locator('input[type=file]').setInputFiles([
     "public/icon-512.png",
@@ -17,7 +17,7 @@ test("selecting photos fills slots and reveals Save", async ({ page }) => {
   ]);
   await expect(page.getByRole("button", { name: "Photo slot 1, filled" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Photo slot 2, filled" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Export", exact: true })).toBeVisible();
 });
 
 test("swiping across a photo changes its filter", async ({ page }) => {
@@ -116,17 +116,20 @@ test("adds and removes text", async ({ page }) => {
   await expect(page.getByText("Texts")).toHaveCount(0);
 });
 
-test("saves a PNG after adding a photo", async ({ page }) => {
+test("exports a PNG after adding a photo", async ({ page }) => {
   // Force the download fallback (headless has no real share sheet).
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "canShare", { value: () => false, configurable: true });
   });
   await page.goto("/");
   await page.locator('input[type=file]').setInputFiles("public/icon-512.png");
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Size Collage" }).click();
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByRole("button", { name: /^Export \d+ × \d+$/ }).click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toMatch(/^collage-\d+\.png$/);
+  // A 512px test photo can't fill 2160px sharply, so the collage exports smaller.
+  expect(download.suggestedFilename()).toMatch(/^collage-\d+x\d+-\d+\.png$/);
 });
 
 test("signin page explains local-first, no account", async ({ page }) => {

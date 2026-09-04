@@ -29,7 +29,7 @@ describe("layouts", () => {
 
   it("getLayout falls back to the first layout for unknown ids", () => {
     expect(getLayout("does-not-exist")).toBe(LAYOUTS[0]);
-    expect(getLayout("single").id).toBe("single");
+    expect(getLayout("grid-4").id).toBe("grid-4");
   });
 
   it("getBackground falls back for unknown ids", () => {

@@ -2,10 +2,9 @@ import { FONTS, getBackground, getLayout, TEXT_PRESETS } from "./layouts";
 import { filterCss } from "./filters";
 import { stickerFilter } from "./sticker";
 import { coverCrop } from "./geometry";
-import type { CollageState, Photo, Rect } from "./types";
+import { contentBox, metrics, nativeScale, resolveSize } from "./sizes";
+import type { Clip, CollageState, Photo, Rect } from "./types";
 
-/** Longest edge of the exported image, in device pixels. */
-const LONG_EDGE = 2160;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -25,6 +24,20 @@ function resolveFamily(family: string): string {
       .trim();
     return value || "sans-serif";
   });
+}
+
+/** Circle or polygon mask, expressed in the cell's own box. */
+function clipPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, clip: Clip) {
+  ctx.beginPath();
+  if (clip === "circle") {
+    ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+    return;
+  }
+  clip.forEach(([px, py], k) => {
+    if (k === 0) ctx.moveTo(x + px * w, y + py * h);
+    else ctx.lineTo(x + px * w, y + py * h);
+  });
+  ctx.closePath();
 }
 
 function roundRectPath(
@@ -67,10 +80,16 @@ export async function renderCollage(
   photos: Photo[]
 ): Promise<HTMLCanvasElement> {
   const layout = getLayout(state.layoutId);
-  const [aw, ah] = layout.aspect;
-  const scale = LONG_EDGE / Math.max(aw, ah);
-  const cw = Math.round(aw * scale);
-  const ch = Math.round(ah * scale);
+  const byId = new Map(photos.map((p) => [p.id, p]));
+  const cellPhotos = layout.cells.map((_, i) => byId.get(state.filled[i]));
+  let { w: cw, h: ch } = resolveSize(state.sizeId, layout);
+  let k = nativeScale(state, layout, cellPhotos);
+  if (state.sizeId === "auto" && k < 1) {
+    // The collage's own export just gets smaller instead of padded.
+    cw = Math.round(cw * k);
+    ch = Math.round(ch * k);
+    k = 1;
+  }
 
   const canvas = document.createElement("canvas");
   canvas.width = cw;
@@ -82,13 +101,9 @@ export async function renderCollage(
   ctx.fillStyle = getBackground(state.bgId).color;
   ctx.fillRect(0, 0, cw, ch);
 
-  const byId = new Map(photos.map((p) => [p.id, p]));
-  const minD = Math.min(cw, ch);
-  const gapPx = (state.gap / 100) * minD * 0.12;
-  const radiusPx = (state.radius / 100) * minD * 0.12;
-  const inset = (state.safe / 100) * minD * 0.2;
-  const iw = cw - inset * 2;
-  const ih = ch - inset * 2;
+  const { gapPx, radiusPx, inset } = metrics(state, cw, ch);
+  const box = contentBox(layout, cw - inset * 2, ch - inset * 2, k);
+  ctx.imageSmoothingQuality = "high";
 
   // Cells - load every image in parallel first so export stays fast.
   const jobs = layout.cells.map((cell, i) => {
@@ -101,13 +116,14 @@ export async function renderCollage(
   jobs.forEach((j, k) => {
     const img = loaded[k];
     if (!j || !img) return;
-    const x = inset + j.cell.x * iw + gapPx / 2;
-    const y = inset + j.cell.y * ih + gapPx / 2;
-    const w = j.cell.w * iw - gapPx;
-    const h = j.cell.h * ih - gapPx;
+    const x = inset + box.x + j.cell.x * box.w + gapPx / 2;
+    const y = inset + box.y + j.cell.y * box.h + gapPx / 2;
+    const w = j.cell.w * box.w - gapPx;
+    const h = j.cell.h * box.h - gapPx;
     if (w <= 0 || h <= 0) return;
     ctx.save();
-    roundRectPath(ctx, x, y, w, h, radiusPx);
+    if (j.cell.clip) clipPath(ctx, x, y, w, h, j.cell.clip);
+    else roundRectPath(ctx, x, y, w, h, radiusPx);
     ctx.clip();
     const css = filterCss(state.filter);
     if (css !== "none") ctx.filter = css;
@@ -177,7 +193,7 @@ export async function renderCollage(
 export async function exportBlob(
   state: CollageState,
   photos: Photo[]
-): Promise<Blob> {
+): Promise<{ blob: Blob; w: number; h: number }> {
   if ("fonts" in document) {
     try {
       await (document as Document & { fonts: FontFaceSet }).fonts.ready;
@@ -186,12 +202,13 @@ export async function exportBlob(
     }
   }
   const canvas = await renderCollage(state, photos);
-  return new Promise((resolve, reject) => {
+  const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error("export failed"))),
       "image/png"
     );
   });
+  return { blob, w: canvas.width, h: canvas.height };
 }
 
 export type SaveResult = "shared" | "cancelled" | "downloaded";
@@ -205,8 +222,8 @@ export async function saveCollage(
   state: CollageState,
   photos: Photo[]
 ): Promise<SaveResult> {
-  const blob = await exportBlob(state, photos);
-  const filename = `collage-${Date.now()}.png`;
+  const { blob, w, h } = await exportBlob(state, photos);
+  const filename = `collage-${w}x${h}-${Date.now()}.png`;
   const file = new File([blob], filename, { type: "image/png" });
 
   const nav = navigator as Navigator & {

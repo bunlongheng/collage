@@ -1,5 +1,8 @@
+/** Optional photo mask: a circle, or a polygon of points relative to the cell box (0..1). */
+export type Clip = "circle" | [number, number][];
+
 /** A fractional rectangle inside the canvas (all values 0..1). */
-export type Rect = { x: number; y: number; w: number; h: number };
+export type Rect = { x: number; y: number; w: number; h: number; clip?: Clip };
 
 /** A collage layout: a canvas aspect ratio and a set of photo cells. */
 export type Layout = {
@@ -18,6 +21,11 @@ export type Photo = {
   src: string;
   /** True for device uploads (shown with a small badge, revocable). */
   uploaded?: boolean;
+  /** Decoded pixel size and the original file's size/type (uploads only). */
+  width?: number;
+  height?: number;
+  bytes?: number;
+  type?: string;
 };
 
 /** Named text styles so a caption looks good the instant it is added. */
@@ -72,4 +80,6 @@ export type CollageState = {
   /** Outer margin around the whole collage, 0..100. */
   safe: number;
   bgId: string;
+  /** Export size preset id (see lib/sizes); "auto" = the layout's own aspect. */
+  sizeId: string;
 };

@@ -4,13 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas } from "./Canvas";
 import { Mark } from "./Mark";
 import { LayoutGlyph } from "./LayoutGlyph";
-import { AdjustPanel, LayoutsPanel, StickersPanel } from "./Panels";
+import { AdjustPanel, ExportMenu, InfoPanel, LayoutsPanel, StickersPanel } from "./Panels";
 import { TextToolbar } from "./TextToolbar";
 import { StickerToolbar } from "./StickerToolbar";
-import { getLayout, TEXT_PRESETS } from "@/lib/layouts";
+import { getLayout, LAYOUTS, TEXT_PRESETS } from "@/lib/layouts";
 import { cycleFilter, FILTERS } from "@/lib/filters";
 import { saveCollage } from "@/lib/export";
 import { readImageFile, isImageFile } from "@/lib/image";
+import { isHeic } from "@/lib/heic";
 import { clamp01 } from "@/lib/geometry";
 import type { Emoji } from "@/lib/emoji";
 import type { CollageState, Photo, StickerItem, TextItem } from "@/lib/types";
@@ -25,10 +26,11 @@ const INITIAL: CollageState = {
   gap: 14,
   radius: 0,
   safe: 0,
-  bgId: "snow",
+  bgId: "ink",
+  sizeId: "auto",
 };
 
-type Tool = "layouts" | "stickers" | "adjust" | null;
+type Tool = "layouts" | "stickers" | "adjust" | "info" | "export" | null;
 
 export function Editor() {
   const [state, setState] = useState<CollageState>(INITIAL);
@@ -91,16 +93,29 @@ export function Editor() {
     const list = Array.from(files).filter(isImageFile);
     if (!list.length) return;
     const start = targetRef.current;
-    list.forEach((file, idx) => {
-      const cell = (start + idx) % cellCount;
+    // More photos than slots: grow to the smallest layout that holds them all.
+    const need = start + list.length;
+    let slots = cellCount;
+    if (need > slots) {
+      const bySize = [...LAYOUTS].sort((a, b) => a.cells.length - b.cells.length);
+      const fit = bySize.find((l) => l.cells.length >= need) ?? bySize[bySize.length - 1];
+      slots = fit.cells.length;
+      setState((s) => ({ ...s, layoutId: fit.id }));
+      if (need > slots) flash(`Only ${slots} photos fit`);
+    }
+    list.slice(0, slots - start).forEach((file, idx) => {
+      const cell = start + idx;
       readImageFile(file)
-        .then((src) => {
+        .then(({ src, width, height }) => {
           const id = `u${idRef.current++}`;
-          const photo: Photo = { id, name: file.name, src, uploaded: true };
+          const photo: Photo = {
+            id, name: file.name, src, uploaded: true,
+            width, height, bytes: file.size, type: file.type || (isHeic(file) ? "image/heic" : "image"),
+          };
           setUploads((u) => [photo, ...u]);
           setState((s) => ({ ...s, filled: { ...s.filled, [cell]: id } }));
         })
-        .catch(() => flash("Couldn't read that photo"));
+        .catch(() => flash(`Couldn't open ${file.name} - try a JPG or PNG`));
     });
     setSelectedCell(null);
   }
@@ -149,7 +164,17 @@ export function Editor() {
   }
 
   function setLayout(id: string) {
-    setState((s) => ({ ...s, layoutId: id }));
+    setState((s) => {
+      // Empty slots in the new layout take any uploads not already placed.
+      const filled = { ...s.filled };
+      const placed = new Set(Object.values(filled));
+      const spare = uploads.filter((p) => !placed.has(p.id));
+      for (let i = 0; i < getLayout(id).cells.length && spare.length; i++) {
+        if (!filled[i]) filled[i] = spare.shift()!.id;
+      }
+      return { ...s, layoutId: id, filled };
+    });
+    setTool(null); // close the panel so the result is visible right away
   }
 
   function addText() {
@@ -197,17 +222,20 @@ export function Editor() {
     setSelectedStickerId(null);
   }
 
-  async function onSave() {
-    setExporting(true);
-    setSelectedTextId(null);
-    setSelectedStickerId(null);
+  // Picking a size only changes the preview - Export in the menu does the work.
+  function setSize(sizeId: string) {
+    setState((s) => ({ ...s, sizeId }));
+  }
+
+  async function doExport() {
     setTool(null);
+    setExporting(true);
     try {
       const result = await saveCollage(state, uploads);
-      if (result === "downloaded") flash("Saved to your downloads");
-      else if (result === "shared") flash("Saved");
+      if (result === "downloaded") flash("Exported to your downloads");
+      else if (result === "shared") flash("Exported");
     } catch {
-      flash("Save failed - try again");
+      flash("Export failed - try again");
     } finally {
       setExporting(false);
     }
@@ -240,15 +268,17 @@ export function Editor() {
               <IconButton label="Adjust" active={tool === "adjust"} onClick={() => toggleTool("adjust")}><SlidersIcon /></IconButton>
             </>
           )}
+          <IconButton label="Info" active={tool === "info"} onClick={() => toggleTool("info")}><InfoIcon /></IconButton>
           {hasPhotos ? (
             <button
               type="button"
-              onClick={onSave}
+              onClick={() => toggleTool("export")}
               disabled={exporting}
+              aria-pressed={tool === "export"}
               className="ml-1 flex items-center gap-2 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
             >
               <SaveIcon />
-              {exporting ? "Saving…" : "Save"}
+              {exporting ? "Exporting…" : "Export"}
             </button>
           ) : (
             <button
@@ -286,6 +316,8 @@ export function Editor() {
         {tool === "layouts" && <LayoutsPanel state={state} onSetLayout={setLayout} />}
         {tool === "stickers" && <StickersPanel onPick={addSticker} />}
         {tool === "adjust" && <AdjustPanel state={state} onSetStyle={(patch) => setState((s) => ({ ...s, ...patch }))} />}
+        {tool === "info" && <InfoPanel state={state} photos={uploads} />}
+        {tool === "export" && <ExportMenu state={state} photos={uploads} onPick={setSize} onExport={doExport} />}
       </div>
 
       <input
@@ -335,6 +367,9 @@ function SlidersIcon() {
 }
 function PhotosIcon() {
   return <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>;
+}
+function InfoIcon() {
+  return <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>;
 }
 function SaveIcon() {
   return <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>;
