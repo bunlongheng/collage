@@ -5,7 +5,8 @@ import { FONTS, getBackground, getLayout, TEXT_PRESETS } from "@/lib/layouts";
 import { filterCss } from "@/lib/filters";
 import { emojiSrc } from "@/lib/emoji";
 import { stickerFilter } from "@/lib/sticker";
-import { clamp01, fitSize } from "@/lib/geometry";
+import { clamp01, clipCss, fitSize } from "@/lib/geometry";
+import { contentBox, metrics, nativeScale, resolveSize } from "@/lib/sizes";
 import type { CollageState, Photo, TextItem } from "@/lib/types";
 
 type Props = {
@@ -25,20 +26,19 @@ type Props = {
   stageRef: React.RefObject<HTMLDivElement | null>;
 };
 
-function useFit(aspect: [number, number]) {
+function useFit(aw: number, ah: number) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const [aw, ah] = aspect;
     const ro = new ResizeObserver(() => {
       const pad = 16;
       setSize(fitSize(aw, ah, el.clientWidth - pad * 2, el.clientHeight - pad * 2));
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [aspect]);
+  }, [aw, ah]);
   return { wrapRef, size };
 }
 
@@ -70,14 +70,14 @@ export function Canvas({
   onTapCell, onHoldCell, onDeselect, onCycleFilter, onSelectText, onMoveText, onSelectSticker, onMoveSticker, stageRef,
 }: Props) {
   const layout = getLayout(state.layoutId);
-  const { wrapRef, size } = useFit(layout.aspect);
+  const out = resolveSize(state.sizeId, layout);
+  const { wrapRef, size } = useFit(out.w, out.h);
   const byId = new Map(photos.map((p) => [p.id, p]));
-  const minD = Math.min(size.w, size.h);
-  const gapPx = (state.gap / 100) * minD * 0.12;
-  const radiusPx = (state.radius / 100) * minD * 0.12;
-  const inset = (state.safe / 100) * minD * 0.2;
-  const iw = Math.max(0, size.w - inset * 2);
-  const ih = Math.max(0, size.h - inset * 2);
+  const { gapPx, radiusPx, inset } = metrics(state, size.w, size.h);
+  // Mirror the export: on a display preset the collage shrinks (centered) as
+  // far as the photos' own resolution allows, so the preview is honest.
+  const k = state.sizeId === "auto" ? 1 : nativeScale(state, layout, layout.cells.map((_, i) => byId.get(state.filled[i])));
+  const box = contentBox(layout, Math.max(0, size.w - inset * 2), Math.max(0, size.h - inset * 2), k);
   const css = filterCss(state.filter);
   const hasPhotos = Object.keys(state.filled).length > 0;
 
@@ -158,7 +158,7 @@ export function Canvas({
     >
       <div
         ref={stageRef}
-        className="relative overflow-hidden rise"
+        className="relative overflow-hidden rise outline outline-1 outline-black/10 dark:outline-white/20"
         style={{ width: size.w || 1, height: size.h || 1, background: getBackground(state.bgId).color, boxShadow: "var(--shadow)", touchAction: "none" }}
         onPointerDown={onStageDown}
         onPointerMove={onStageMove}
@@ -176,14 +176,15 @@ export function Canvas({
               tabIndex={0}
               aria-label={photo ? `Photo slot ${i + 1}, filled` : `Photo slot ${i + 1}, empty`}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onTapCell(i); } }}
-              className={`absolute overflow-hidden ${photo ? "" : "grid place-items-center text-black/30"}`}
+              className={`absolute overflow-hidden ${photo ? "" : "grid place-items-center text-[#8e8e93]"}`}
               style={{
-                left: inset + cell.x * iw + gapPx / 2,
-                top: inset + cell.y * ih + gapPx / 2,
-                width: cell.w * iw - gapPx,
-                height: cell.h * ih - gapPx,
-                borderRadius: radiusPx,
-                backgroundColor: photo ? undefined : "rgba(120,120,128,0.14)",
+                left: inset + box.x + cell.x * box.w + gapPx / 2,
+                top: inset + box.y + cell.y * box.h + gapPx / 2,
+                width: cell.w * box.w - gapPx,
+                height: cell.h * box.h - gapPx,
+                borderRadius: cell.clip ? 0 : radiusPx,
+                clipPath: clipCss(cell.clip),
+                backgroundColor: photo ? undefined : "rgba(120,120,128,0.22)",
                 backgroundImage: photo ? `url("${photo.src}")` : undefined,
                 backgroundSize: "cover",
                 backgroundPosition: "center",

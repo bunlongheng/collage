@@ -5,7 +5,8 @@ import type { NextConfig } from "next";
 // React needs eval() for dev-only debugging; production stays strict.
 // React needs eval() for dev-only debugging; production stays strict.
 const isDev = process.env.NODE_ENV !== "production";
-const scriptSrc = `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`;
+// 'wasm-unsafe-eval' lets the lazy-loaded libheif WebAssembly decoder (HEIC) run.
+const scriptSrc = `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""}`;
 const csp = [
   "default-src 'self'",
   "img-src 'self' data: blob:",
@@ -33,6 +34,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Let phones on the LAN load dev assets (Next blocks cross-origin dev requests by default).
+  allowedDevOrigins: ["10.0.0.*", "192.168.*.*"],
   poweredByHeader: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

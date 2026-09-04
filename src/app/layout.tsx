@@ -60,8 +60,9 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-// Set theme before first paint - no flash of the wrong theme.
-const themeScript = `(function(){try{var t=localStorage.getItem('collage-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);}catch(e){}})();`;
+// Set theme before first paint - no flash of the wrong theme. Dark by default;
+// the toggle stores an explicit choice.
+const themeScript = `(function(){try{var t=localStorage.getItem('collage-theme');var d=t?t==='dark':true;document.documentElement.classList.toggle('dark',d);}catch(e){}})();`;
 
 export default function RootLayout({
   children,

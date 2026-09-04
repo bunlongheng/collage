@@ -1,4 +1,5 @@
 /** Pure geometry helpers shared by the on-screen canvas and the PNG export. */
+import type { Clip } from "./types";
 
 export function clamp01(n: number): number {
   return Math.min(1, Math.max(0, n));
@@ -37,4 +38,11 @@ export function coverCrop(
     sy = (imgH - sh) / 2;
   }
   return { sx, sy, sw, sh };
+}
+
+/** CSS clip-path for a cell mask, or undefined for a plain rectangle. */
+export function clipCss(clip?: Clip): string | undefined {
+  if (!clip) return undefined;
+  if (clip === "circle") return "ellipse(50% 50% at 50% 50%)";
+  return `polygon(${clip.map(([px, py]) => `${px * 100}% ${py * 100}%`).join(", ")})`;
 }
