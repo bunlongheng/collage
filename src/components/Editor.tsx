@@ -249,12 +249,12 @@ export function Editor() {
 
   return (
     <div className="flex h-[100dvh] flex-col bg-bg">
-      <header className="flex shrink-0 items-center justify-between gap-2 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+1.5rem)] md:mx-auto md:w-full md:max-w-3xl">
+      <header className="flex shrink-0 items-center justify-between gap-2 px-2 pb-3 min-[380px]:px-4 pt-[calc(env(safe-area-inset-top)+1.5rem)] md:mx-auto md:w-full md:max-w-3xl">
         <div className="flex items-center gap-2">
-          <Mark className="size-7 text-ink" />
+          <Mark className="hidden size-7 text-ink min-[380px]:block" />
           <span className="hidden text-lg font-semibold tracking-tight text-ink sm:inline">Collage</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-0.5 min-[380px]:gap-1 sm:gap-1.5">
           <IconButton label="Layouts" active={tool === "layouts"} onClick={() => toggleTool("layouts")}>
             <LayoutGlyph layout={getLayout(state.layoutId)} px={18} />
           </IconButton>
@@ -275,7 +275,7 @@ export function Editor() {
               onClick={() => toggleTool("export")}
               disabled={exporting}
               aria-pressed={tool === "export"}
-              className="ml-1 flex items-center gap-2 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
+              className="ml-0.5 flex items-center gap-1.5 rounded-full bg-accent px-3 py-2 text-[13px] font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60 sm:ml-1 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm"
             >
               <SaveIcon />
               {exporting ? "Exporting…" : "Export"}
@@ -346,7 +346,7 @@ function IconButton({ children, label, active, onClick }: { children: React.Reac
       onClick={onClick}
       aria-label={label}
       aria-pressed={active}
-      className={`grid size-9 place-items-center rounded-full border transition-colors ${active ? "border-accent text-accent" : "hair text-ink hover:bg-surface-2"}`}
+      className={`grid size-8 place-items-center rounded-full border transition-colors sm:size-9 ${active ? "border-accent text-accent" : "hair text-ink hover:bg-surface-2"}`}
     >
       {children}
     </button>
@@ -354,22 +354,22 @@ function IconButton({ children, label, active, onClick }: { children: React.Reac
 }
 
 function TextIcon() {
-  return <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden><path d="M5 6h14M12 6v13M9 19h6" /></svg>;
+  return <svg viewBox="0 0 24 24" className="size-[18px] sm:size-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden><path d="M5 6h14M12 6v13M9 19h6" /></svg>;
 }
 function FilterIcon() {
-  return <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="9" cy="9" r="6" /><circle cx="15" cy="15" r="6" /></svg>;
+  return <svg viewBox="0 0 24 24" className="size-[18px] sm:size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="9" cy="9" r="6" /><circle cx="15" cy="15" r="6" /></svg>;
 }
 function SmileIcon() {
-  return <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M8.5 14a4 4 0 0 0 7 0" /><path d="M9 9.5h.01M15 9.5h.01" /></svg>;
+  return <svg viewBox="0 0 24 24" className="size-[18px] sm:size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M8.5 14a4 4 0 0 0 7 0" /><path d="M9 9.5h.01M15 9.5h.01" /></svg>;
 }
 function SlidersIcon() {
-  return <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4M14 4v4M6 10v4M12 16v4" /></svg>;
+  return <svg viewBox="0 0 24 24" className="size-[18px] sm:size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4M14 4v4M6 10v4M12 16v4" /></svg>;
 }
 function PhotosIcon() {
-  return <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>;
+  return <svg viewBox="0 0 24 24" className="size-[18px] sm:size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>;
 }
 function InfoIcon() {
-  return <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>;
+  return <svg viewBox="0 0 24 24" className="size-[18px] sm:size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>;
 }
 function SaveIcon() {
   return <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>;

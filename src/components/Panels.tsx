@@ -208,7 +208,9 @@ export function ExportMenu({
   const k = nativeScale(state, layout, layout.cells.map((_, i) => byId.get(state.filled[i])));
   return (
     <Shell>
-      <div className="grid gap-1 sm:grid-cols-2">
+      {/* Two compact columns so the collage stays visible under the menu and
+          you can watch the preview change as you pick a size. */}
+      <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
         {list.map((p) => {
           const active = state.sizeId === p.id;
           return (
@@ -218,17 +220,19 @@ export function ExportMenu({
               onClick={() => onPick(p.id)}
               aria-label={`Size ${p.name}`}
               aria-pressed={active}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-surface-2 ${active ? "bg-surface-2 text-accent" : "text-ink"}`}
+              className={`flex items-center gap-2 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-surface-2 ${active ? "bg-surface-2 text-accent" : "text-ink"}`}
             >
               <SizeGlyph icon={p.icon} />
-              <span className="flex-1 text-sm font-medium">{p.name}</span>
-              <span className="text-xs tabular-nums text-muted">{p.w || own.w} × {p.h || own.h}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13px] font-medium leading-tight">{p.name}</span>
+                <span className="block text-[11px] tabular-nums leading-tight text-muted">{p.w || own.w} × {p.h || own.h}</span>
+              </span>
             </button>
           );
         })}
       </div>
-      <div className="mt-3 flex items-center gap-3">
-        <span className="min-w-0 flex-1 text-xs text-muted">
+      <div className="mt-2 flex items-center gap-3">
+        <span className="min-w-0 flex-1 text-[11px] leading-tight text-muted">
           {k < 1 ? "Collage shrunk to keep every photo sharp - no upscaling." : "Every photo has enough pixels for this size."}
         </span>
         <button
